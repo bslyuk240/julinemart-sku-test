@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JulineMart SKU Generator</title>
+  <title>JulineMart - SKU & Inventory System</title>
   <style>
     :root {
       --purple-dark: #2d1b69;
@@ -19,1440 +19,342 @@
       --success: #10b981;
       --danger: #ef4444;
     }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); }
     
-    header { 
-      background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%); 
-      color: white; 
-      padding: 16px 24px; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-content {
-      max-width: 1400px;
-      margin: 0 auto;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%);
+      min-height: 100vh;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+      justify-content: center;
+      padding: 20px;
     }
-    .logo-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header-logo {
-      height: 40px;
-      width: auto;
-      object-fit: contain;
-    }
-    h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
     
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+    .container {
+      max-width: 1200px;
+      width: 100%;
     }
-
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-    }
-    .nav-tab {
-      padding: 8px 20px;
-      border: none;
-      background: rgba(255,255,255,0.1);
+    
+    .header {
+      text-align: center;
       color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-    .nav-tab:hover {
-      background: rgba(255,255,255,0.2);
-    }
-    .nav-tab.active {
-      background: white;
-      color: var(--purple);
+      margin-bottom: 48px;
     }
     
-    .menu-toggle {
-      display: none;
-      background: none;
-      border: none;
-      color: white;
-      cursor: pointer;
-      padding: 8px;
-    }
-    .menu-toggle svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    .status-badges {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .badge.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .badge.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    .badge.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-    .badge-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
+    .header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
     }
     
-    .container { 
-      max-width: 1400px; 
-      margin: 0 auto; 
-      padding: 24px;
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
     }
     
-    .card { 
-      background: var(--card); 
-      border-radius: 16px; 
-      padding: 24px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      border: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
-    .card-title { 
-      font-size: 18px; 
-      font-weight: 600; 
-      margin-bottom: 20px;
-      color: var(--text);
-    }
-    
-    .form-grid {
+    .cards {
       display: grid;
-      gap: 20px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 768px) {
-      .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-      .form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      margin-bottom: 32px;
     }
     
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-    label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    input, select {
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
+    .card {
       background: white;
-      color: var(--text);
-      transition: all 0.2s;
-    }
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--purple);
-      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
-    }
-    input[readonly] {
-      background: #f9fafb;
-      color: var(--text-light);
-    }
-    .sku-display {
-      font-family: 'Courier New', monospace;
-      font-weight: 600;
-      font-size: 16px;
-      letter-spacing: 0.5px;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transition: transform 0.3s, box-shadow 0.3s;
     }
     
-    .btn-group {
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    }
+    
+    .card-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+      border-radius: 16px;
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-    }
-    button {
-      padding: 12px 24px;
-      border-radius: 10px;
-      border: none;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      margin-bottom: 24px;
+      font-size: 32px;
     }
+    
+    .card.vendor .card-icon {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-hover) 100%);
+    }
+    
+    .card h2 {
+      font-size: 24px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    
+    .card p {
+      color: var(--text-light);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+    
     .btn-primary {
       background: var(--purple);
       color: white;
     }
+    
     .btn-primary:hover {
       background: var(--purple-light);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(91, 33, 182, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(91, 33, 182, 0.4);
     }
+    
     .btn-orange {
       background: var(--orange);
       color: white;
     }
+    
     .btn-orange:hover {
       background: var(--orange-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-    }
-    .btn-secondary {
-      background: #f3f4f6;
-      color: var(--text);
-    }
-    .btn-secondary:hover {
-      background: #e5e7eb;
-    }
-    .btn-danger {
-      background: var(--danger);
-      color: white;
-    }
-    .btn-danger:hover {
-      background: #dc2626;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
     }
     
-    .btn-small {
-      padding: 8px 16px;
-      font-size: 12px;
-    }
-
-    .table-container {
-      overflow-x: auto;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      margin-top: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    th {
-      background: #f9fafb;
-      padding: 12px 16px;
-      text-align: left;
-      font-weight: 600;
-      color: var(--text);
-      border-bottom: 2px solid var(--border);
-      position: sticky;
-      top: 0;
-    }
-    td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    tr:hover td {
-      background: #f9fafb;
-    }
-    .sku-cell {
-      font-family: 'Courier New', monospace;
-      font-weight: 600;
-      color: var(--purple);
+    .login-form {
+      display: none;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 450px;
+      margin: 0 auto;
     }
     
-    .status-msg {
-      padding: 12px 16px;
-      border-radius: 10px;
-      margin-top: 16px;
-      font-size: 14px;
-    }
-    .status-msg.success {
-      background: #d1fae5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-    .status-msg.error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
+    .login-form.active {
+      display: block;
     }
     
-    .file-upload {
-      border: 2px dashed var(--border);
-      border-radius: 10px;
-      padding: 24px;
+    .form-header {
       text-align: center;
-      cursor: pointer;
+      margin-bottom: 32px;
+    }
+    
+    .form-header h2 {
+      color: var(--text);
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .form-header p {
+      color: var(--text-light);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
       transition: all 0.2s;
     }
-    .file-upload:hover {
+    
+    .form-group input:focus {
+      outline: none;
       border-color: var(--purple);
-      background: #faf5ff;
-    }
-    .file-upload input {
-      display: none;
-    }
-    .logo-preview {
-      margin-top: 16px;
-      text-align: center;
-    }
-    .logo-preview img {
-      max-width: 200px;
-      max-height: 80px;
-      object-fit: contain;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-    }
-    .logo-error {
-      color: var(--danger);
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    .header-logo.broken {
-      display: none !important;
+      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
     }
     
-    .icon {
-      width: 18px;
-      height: 18px;
+    .error-msg {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .error-msg.show {
+      display: block;
+    }
+    
+    .back-btn {
+      background: #f3f4f6;
+      color: var(--text);
+      margin-top: 12px;
+    }
+    
+    .back-btn:hover {
+      background: #e5e7eb;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .footer {
+      text-align: center;
+      color: white;
+      opacity: 0.8;
+      margin-top: 32px;
     }
     
     @media (max-width: 768px) {
-      .header-content {
-        flex-wrap: nowrap;
-        justify-content: space-between;
+      .header h1 {
+        font-size: 32px;
       }
-      .header-right {
-        width: auto;
-        justify-content: flex-end;
-        margin-top: 0;
+      
+      .cards {
+        grid-template-columns: 1fr;
       }
-      .btn-group.mobile-no-wrap {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding-bottom: 8px;
-      }
-      .btn-group.mobile-no-wrap .btn-small {
-        flex-shrink: 0;
-      }
-      .status-badges .badge {
-        padding: 4px 8px;
-        font-size: 10px;
-      }
-      .status-badges .badge span:last-child {
-        display: none;
-      }
-      .status-badges .badge.success span:last-child,
-      .status-badges .badge.error span:last-child {
-        display: inline;
-      }
-      .nav-menu {
-        position: relative;
-      }
-      .menu-toggle {
-        display: block;
-      }
-      .nav-tabs {
-        display: none;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: var(--purple);
-        flex-direction: column;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        padding: 8px;
-        margin-top: 8px;
-        width: 180px;
-      }
-      .nav-menu.menu-open .nav-tabs {
-        display: flex;
-      }
-      .nav-tab {
-        text-align: left;
-      }
-      h1 {
-        font-size: 18px;
-      }
-      .card {
-        padding: 20px;
-      }
-    }
-    
-    .page {
-      display: none;
-    }
-    .page.active {
-      display: block;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <div class="logo-title">
-        <img src="" alt="Logo" class="header-logo" id="headerLogo" style="display: none;" />
-        <h1>JulineMart SKU Generator</h1>
-      </div>
-      <div class="header-right">
-        <div class="nav-menu">
-          <button class="menu-toggle">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-          </button>
-          <nav class="nav-tabs">
-            <button class="nav-tab active" data-page="create">Create</button>
-            <button class="nav-tab" data-page="search">Search</button>
-            <button class="nav-tab" data-page="settings">⚙️ Settings</button>
-          </nav>
-        </div>
-      </div>
-    </div>
-  </header>
-
   <div class="container">
-    <section class="page active" id="page-create">
+    <div class="header">
+      <h1>JulineMart</h1>
+      <p>SKU Management & Inventory System</p>
+    </div>
+    
+    <!-- Portal Selection Cards -->
+    <div class="cards" id="portalCards">
       <div class="card">
-        <h2 class="card-title">Create / Update SKU</h2>
-        <div class="form-grid cols-2">
-          <div class="form-group">
-            <label>Category</label>
-            <select id="category"></select>
-          </div>
-          <div class="form-group">
-            <label>Category Code</label>
-            <input type="text" id="categoryCode" readonly />
-          </div>
-        </div>
-        
-        <div class="form-grid cols-2" style="margin-top: 20px;">
-          <div class="form-group">
-            <label>Vendor Name</label>
-            <input type="text" id="vendorName" placeholder="Queen Styles" />
-          </div>
-          <div class="form-group">
-            <label>Vendor Code</label>
-            <input type="text" id="vendorCode" placeholder="QUE" maxlength="3" />
-          </div>
-        </div>
-        
-        <div class="form-grid cols-3" style="margin-top: 20px;">
-          <div class="form-group">
-            <label>Product Number</label>
-            <input type="number" id="productNumber" min="1" max="999" placeholder="001" />
-          </div>
-          <div class="form-group">
-            <label>Product Name</label>
-            <input type="text" id="productName" placeholder="Ankara Maxi Dress" />
-          </div>
-          <div class="form-group">
-            <label>Generated SKU</label>
-            <input type="text" id="sku" class="sku-display" readonly />
-          </div>
-        </div>
-        
-        <div class="form-grid" style="margin-top: 20px;">
-          <div class="form-group">
-            <label>Product URL</label>
-            <input type="text" id="productUrl" placeholder="https://julinemart.com/product/..." />
-          </div>
-        </div>
-        
-        <div class="btn-group mobile-no-wrap">
-          <button class="btn-primary btn-small" id="suggestBtn">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            Auto-Suggest
-          </button>
-          <button class="btn-orange btn-small" id="saveBtn">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Save SKU
-          </button>
-          <button class="btn-primary btn-small" id="printBtn">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            Print Label
-          </button>
-          <button class="btn-secondary btn-small" id="clearBtn">Clear</button>
-        </div>
-        
-        <div id="status"></div>
-      </div>
-      <div class="status-badges" style="margin-top: 20px; justify-content: center;">
-          <div class="badge" id="sbStatus">
-            <span class="badge-dot"></span>
-            <span>Connecting...</span>
-          </div>
-          <div class="badge" id="selfTest">
-            <span class="badge-dot"></span>
-            <span>Testing...</span>
-          </div>
-        </div>
-    </section>
-
-    <section class="page" id="page-search">
-      <div class="card">
-        <h2 class="card-title">Search & Manage SKUs</h2>
-        <div class="form-grid cols-2">
-          <div class="form-group">
-            <label>Filter by Category</label>
-            <select id="filterCategory"></select>
-          </div>
-          <div class="form-group">
-            <label>Filter by Vendor</label>
-            <input type="text" id="filterVendor" placeholder="QUE" maxlength="3" />
-          </div>
-        </div>
-        
-        <div class="btn-group mobile-no-wrap">
-          <button class="btn-secondary btn-small" id="resetFilters">Reset Filters</button>
-          <button class="btn-primary btn-small" id="exportCsv">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            Export CSV
-          </button>
-          <button class="btn-orange btn-small" id="importCsv">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            Import CSV
-          </button>
-          <input type="file" id="csvFile" accept=".csv" style="display:none" />
-        </div>
-        
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Vendor</th>
-                <th>Number</th>
-                <th>Product</th>
-                <th>URL</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="page" id="page-settings">
-      <div class="card">
-        <h2 class="card-title">Logo Settings</h2>
-        <div class="form-group">
-          <label>Logo URL</label>
-          <input type="text" id="logoUrl" placeholder="https://.../logo.png" />
-        </div>
-        <div class="logo-preview" id="logoPreview"></div>
-        <div class="btn-group">
-          <button class="btn-primary" id="saveLogoBtn">Save Logo</button>
-          <button class="btn-secondary" id="clearLogoBtn">Remove Logo</button>
-        </div>
+        <div class="card-icon">👨‍💼</div>
+        <h2>Admin Portal</h2>
+        <p>Full access to SKU management, vendor oversight, and system administration.</p>
+        <a href="admin/index.html" class="btn btn-primary">Enter Admin Portal</a>
       </div>
       
-      <div class="card">
-        <h2 class="card-title">Data Management</h2>
+      <div class="card vendor">
+        <div class="card-icon">🏪</div>
+        <h2>Vendor Portal</h2>
+        <p>Update your product stock levels and manage your inventory in real-time.</p>
+        <button class="btn btn-orange" onclick="showLogin()">Vendor Login</button>
+      </div>
+    </div>
+    
+    <!-- Vendor Login Form -->
+    <div class="login-form" id="loginForm">
+      <div class="form-header">
+        <h2>Vendor Login</h2>
+        <p>Enter your credentials to access your portal</p>
+      </div>
+      
+      <div class="error-msg" id="errorMsg"></div>
+      
+      <form id="vendorLoginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label>Cloud Sync Status</label>
-          <div style="padding: 16px; background: #f9fafb; border-radius: 10px; border: 1px solid var(--border);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-              <div class="badge" id="syncStatus">
-                <span class="badge-dot"></span>
-                <span>Checking connection...</span>
-              </div>
-            </div>
-            <div style="font-size: 13px; color: var(--text-light);">Your SKUs and logo are automatically synced across all devices</div>
-          </div>
+          <label>Email or Vendor Code</label>
+          <input type="text" id="username" placeholder="QUE or vendor@example.com" required />
         </div>
         
-        <div class="btn-group">
-          <button class="btn-primary" id="forceSyncBtn">Force Sync Now</button>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required />
         </div>
-      </div>
-    </section>
+        
+        <button type="submit" class="btn btn-orange">Login</button>
+        <button type="button" class="btn back-btn" onclick="hideLogin()">Back</button>
+      </form>
+      
+      <p style="text-align: center; margin-top: 20px; color: var(--text-light); font-size: 14px;">
+        Don't have an account? Contact admin for registration.
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>&copy; 2025 JulineMart. All rights reserved.</p>
+    </div>
   </div>
 
   <script>
     const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
-
-    const CATEGORY_MAP = {
-      "Fashion & Accessories": "FAS", "Bags": "BAG", "Caps & Hats": "HAT", "Baby Clothing": "BBC",
-      "Eyewear & Sunglasses": "EYE", "Jewelry & Watches": "JEW", "Kids & Baby Clothing": "KBC",
-      "Men's Clothing": "MEN", "Women's Clothing": "WMN", "Footwear": "FTW", "Traditional Wear": "TRD",
-      "Automotive (General)": "AUT", "Engine Oil & Fluids": "OIL", "Car Accessories": "CAR",
-      "Car Electronics": "CEL", "Tyres & Batteries": "TYR", "Motorcycle Parts": "MOT",
-      "Electronics (General)": "ELE", "Gaming Consoles": "GAM", "Accessories (Chargers, Cables, Earphones)": "ACC",
-      "Home Audio & Speakers": "AUD", "Laptops & Computers": "LAP", "Mobile Phones": "MOB",
-      "Tablets": "TAB", "Televisions": "TVS", "Wearable Tech (Smartwatches)": "SMT",
-      "Home & Living (General)": "HOM", "Bathroom Accessories": "BTH", "Bedding & Linen": "BED",
-      "Furniture": "FUR", "Home Décor": "DEC", "Kitchen Appliances": "KIT",
-      "Grocery & Foodstuff (General)": "GRC", "Drinks & Beverages": "DRK", "Grains & Cereals": "GRN",
-      "Organic & Natural Food": "ORG", "Packaged Food": "PKG", "Snacks": "SNK", "Spices & Seasoning": "SPC",
-      "Beauty & Personal Care (General)": "BEA", "Grooming Tools": "GRM", "Haircare": "HAI",
-      "Makeup": "MUP", "Fragrances": "FRG", "Lighting": "LGT", "Sanitary Products": "SAN", "Skincare": "SKN",
-      "Tools & Industrial (General)": "TOL", "Building Materials": "BLD", "Electrical Tools": "ELC",
-      "Hardware": "HRD", "Measuring Instruments": "MSR", "Power Tools": "PWR",
-      "Books & Education (General)": "BOK", "Educational Books": "EDU", "Novels & Literature": "NOV",
-      "Religious Books": "REL", "Stationery": "STA", "School Supplies": "SCH",
-      "Sports & Fitness (General)": "SPO", "Fitness Equipment": "FIT", "Gym Equipment": "GYM", "Water Bottles": "WAT",
-      "Baby, Kids & Toys (General)": "TOY", "Diapers & Wipes": "DIA", "Baby Food & Feeding": "BFD",
-      "Strollers & Carriers": "STR", "Toys & Games": "PLY", "Digital Products": "DIG"
-    };
-
-    const LS_KEY = 'jm_skus_v1';
-    const LS_VENDORS = 'jm_vendor_codes_v1';
-    const LS_LOGO_URL = 'jm_logo_url_v1';
-
-    function loadSkus() { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }
-    function saveSkus(list) { localStorage.setItem(LS_KEY, JSON.stringify(list)); }
-    function loadVendors() { return JSON.parse(localStorage.getItem(LS_VENDORS) || '{}'); }
-    function saveVendors(map) { localStorage.setItem(LS_VENDORS, JSON.stringify(map)); }
-    function loadLogoUrl() { return localStorage.getItem(LS_LOGO_URL) || ''; }
-    function saveLogoUrl(url) { localStorage.setItem(LS_LOGO_URL, url); }
-
-    function normalizeCode(s) { return (s || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0,3); }
-    function numberTo3(n) { return String(n).padStart(3, '0'); }
-    function buildSku(cat, ven, num) { return `${cat}-${ven}-${numberTo3(num)}`; }
-    function nextAvailable(cat, ven) {
-      const used = new Set(loadSkus().filter(x => x.category_code===cat && x.vendor_code===ven).map(x => x.number));
-      for (let i=1;i<=999;i++) { if (!used.has(i)) return i; }
-      return null;
-    }
-
-    function getSupabase(){
+    
+    function getSupabase() {
       if (!window.supabase) return null;
-      if (!getSupabase._client){
-        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+      if (!getSupabase._client) {
+        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
       return getSupabase._client;
     }
-
-    async function cloudUpsert(rec){
-      try{
-        const sb = getSupabase(); if (!sb) return;
-        const { error } = await sb.from('skus').upsert({
-          sku: rec.sku, category_code: rec.category_code, category_name: rec.category_name,
-          vendor_code: rec.vendor_code, vendor_name: rec.vendor_name, number: rec.number,
-          product_name: rec.product_name, product_url: rec.product_url,
-          created_at: rec.created_at, updated_at: rec.updated_at
-        }, { onConflict: 'sku' });
-        if (error) console.error('Supabase upsert failed:', error);
-      }catch(e){ console.error('Supabase error:', e); }
-    }
-
-    async function cloudDelete(sku){ 
-      const sb=getSupabase(); 
-      if (!sb) return; 
-      await sb.from('skus').delete().eq('sku', sku); 
+    
+    function showLogin() {
+      document.getElementById('portalCards').style.display = 'none';
+      document.getElementById('loginForm').classList.add('active');
     }
     
-    async function cloudFetchAll(){ 
-      const sb=getSupabase(); 
-      if (!sb) throw new Error('Not connected'); 
-      const { data, error } = await sb.from('skus').select('*'); 
-      if (error) throw error; 
-      return data||[]; 
+    function hideLogin() {
+      document.getElementById('portalCards').style.display = 'grid';
+      document.getElementById('loginForm').classList.remove('active');
+      document.getElementById('errorMsg').classList.remove('show');
+      document.getElementById('vendorLoginForm').reset();
     }
-
-    async function cloudSaveLogo(url) {
-      try {
-        const sb = getSupabase();
-        if (!sb) return;
-        const { error } = await sb.from('settings').upsert({
-          key: 'logo_url',
-          value: url,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'key' });
-        if (error) console.error('Logo save failed:', error);
-      } catch(e) {
-        console.error('Logo save error:', e);
-      }
+    
+    function showError(message) {
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.textContent = message;
+      errorMsg.classList.add('show');
     }
-
-    async function cloudLoadLogo() {
-      try {
-        const sb = getSupabase();
-        if (!sb) return null;
-        const { data, error } = await sb.from('settings')
-          .select('value')
-          .eq('key', 'logo_url')
-          .maybeSingle();
-        if (error) throw error;
-        return data?.value || null;
-      } catch(e) {
-        console.error('Logo load error:', e);
-        return null;
-      }
-    }
-
-    async function pullFromCloud(){
-      try {
-        const cloud = await cloudFetchAll();
-        const local = loadSkus();
-        const bySku = Object.fromEntries(local.map(r=>[r.sku, r]));
-        let created=0, updated=0;
-        cloud.forEach(r=>{
-          const existing = bySku[r.sku];
-          if (!existing){ local.push(r); created++; }
-          else {
-            const lu = new Date(existing.updated_at||0).getTime();
-            const cu = new Date(r.updated_at||0).getTime();
-            if (cu > lu){ Object.assign(existing, r); updated++; }
-          }
-        });
-        saveSkus(local);
-        renderTable();
-        
-        // Also sync logo from cloud
-        const cloudLogo = await cloudLoadLogo();
-        if (cloudLogo) {
-          const localLogo = loadLogoUrl();
-          if (cloudLogo !== localLogo) {
-            saveLogoUrl(cloudLogo);
-            const headerLogo = document.getElementById('headerLogo');
-            const logoPreview = document.getElementById('logoPreview');
-            if (headerLogo && logoPreview) {
-              updateLogoDisplay(cloudLogo, headerLogo, logoPreview);
-            }
-          }
-        }
-        
-        if (created > 0 || updated > 0) {
-          setStatus(`Synced: +${created} new, ${updated} updated`, 'success');
-        }
-        setSbBadge(true, 'Connected');
-        updateSyncStatus(true);
-      } catch(e){ 
-        console.error('Pull failed:', e);
-        setSbBadge(false, 'Offline');
-        updateSyncStatus(false);
-      }
-    }
-
-    function setSbBadge(ok, msg) {
-      const el = document.getElementById('sbStatus');
-      if (!el) return;
-      el.className = 'badge ' + (ok ? 'success' : 'error');
-      el.querySelector('span:last-child').textContent = msg;
-    }
-
-    function updateSyncStatus(ok) {
-      const el = document.getElementById('syncStatus');
-      if (!el) return;
-      el.className = 'badge ' + (ok ? 'success' : 'error');
-      el.querySelector('span:last-child').textContent = ok ? 'Connected & Synced' : 'Offline Mode';
-    }
-
-    const categorySel = document.getElementById('category');
-    const categoryCode = document.getElementById('categoryCode');
-    const vendorName = document.getElementById('vendorName');
-    const vendorCode = document.getElementById('vendorCode');
-    const productNumber = document.getElementById('productNumber');
-    const productName = document.getElementById('productName');
-    const productUrl = document.getElementById('productUrl');
-    const skuOut = document.getElementById('sku');
-    const status = document.getElementById('status');
-
-    function setStatus(msg, kind='') {
-      if (!msg) { status.innerHTML = ''; status.className = ''; return; }
-      status.innerHTML = `<div class="status-msg ${kind}">${msg}</div>`;
-    }
-
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const page = tab.dataset.page;
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('page-' + page).classList.add('active');
-        tab.classList.add('active');
-        if (page === 'search') renderTable();
-      });
-    });
-
-    function populateCategories() {
-      categorySel.innerHTML = '';
-      document.getElementById('filterCategory').innerHTML = '<option value="">All Categories</option>';
-      Object.keys(CATEGORY_MAP).forEach(name => {
-        const code = CATEGORY_MAP[name];
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        categorySel.appendChild(opt);
-        
-        const fopt = document.createElement('option');
-        fopt.value = code;
-        fopt.textContent = `${code} — ${name}`;
-        document.getElementById('filterCategory').appendChild(fopt);
-      });
-      categorySel.selectedIndex = 0;
-      categoryCode.value = CATEGORY_MAP[categorySel.value] || '';
-    }
-
-    function refreshSkuField() {
-      const cat = categoryCode.value;
-      const ven = normalizeCode(vendorCode.value);
-      const num = productNumber.value ? Number(productNumber.value) : '';
-      vendorCode.value = ven;
-      if (cat && ven && num) skuOut.value = buildSku(cat, ven, num);
-      else skuOut.value = '';
-    }
-
-    function autoSuggestVendorCode() {
-      const name = vendorName.value.trim();
-      const map = loadVendors();
-      if (map[name]) { vendorCode.value = map[name]; return; }
-      const base = normalizeCode(name);
-      if (!base) return;
-      let code = base;
-      const existingCodes = new Set(Object.values(map));
-      if (existingCodes.has(code)) {
-        const alt = [base.slice(0,2)+"X", base.slice(0,1)+base.slice(-2), base.slice(0,1)+"Z"+base.slice(1,2)];
-        for (const c of alt) { if (!existingCodes.has(c)) { code = c; break; } }
-      }
-      vendorCode.value = code.padEnd(3,'X').slice(0,3);
-    }
-
-    function renderTable() {
-      const list = loadSkus();
-      const fc = document.getElementById('filterCategory').value.trim();
-      const fv = normalizeCode(document.getElementById('filterVendor').value);
-      const rows = list
-        .filter(r => (!fc || r.category_code===fc) && (!fv || r.vendor_code===fv))
-        .sort((a,b)=> a.sku.localeCompare(b.sku));
+    
+    async function handleLogin(event) {
+      event.preventDefault();
       
-      const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = rows.map(r => {
-        const pname = (r.product_name||'').replace(/</g,'&lt;');
-        const url = r.product_url ? `<a href="${r.product_url}" target="_blank" style="color: var(--purple);">View</a>` : '-';
-        return `
-          <tr>
-            <td class="sku-cell">${r.sku}</td>
-            <td>${r.category_code}</td>
-            <td>${r.vendor_code}</td>
-            <td>${numberTo3(r.number)}</td>
-            <td>${pname || '-'}</td>
-            <td>${url}</td>
-            <td style="font-size: 12px; color: var(--text-light);">${new Date(r.created_at).toLocaleDateString()}</td>
-            <td>
-              <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" data-edit="${r.sku}">Edit</button>
-              <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" data-label="${r.sku}">Label</button>
-              <button class="btn-danger" style="padding: 6px 12px; font-size: 12px;" data-del="${r.sku}">Delete</button>
-            </td>
-          </tr>`;
-      }).join('');
-    }
-
-    function fillFormFromSku(rec) {
-      const name = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k]===rec.category_code) || '';
-      categorySel.value = name;
-      categoryCode.value = rec.category_code;
-      vendorName.value = rec.vendor_name || '';
-      vendorCode.value = rec.vendor_code;
-      productNumber.value = rec.number;
-      productName.value = rec.product_name || '';
-      productUrl.value = rec.product_url || '';
-      refreshSkuField();
-      document.querySelector('[data-page="create"]').click();
-    }
-
-    document.getElementById('suggestBtn').addEventListener('click', () => {
-      const cat = categoryCode.value;
-      const ven = normalizeCode(vendorCode.value);
-      if (!cat || ven.length!==3) {
-        setStatus('Select category and enter a valid 3-letter vendor code', 'error');
-        return;
-      }
-      const nxt = nextAvailable(cat, ven);
-      if (nxt==null) {
-        setStatus('All numbers 001–999 are used for this combination', 'error');
-        return;
-      }
-      productNumber.value = nxt;
-      refreshSkuField();
-      setStatus(`Next available: ${numberTo3(nxt)}`, 'success');
-    });
-
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const catName = categorySel.value;
-      const cat = categoryCode.value;
-      const vName = vendorName.value.trim();
-      const ven = normalizeCode(vendorCode.value);
-      const num = Number(productNumber.value);
-      const pname = productName.value.trim();
-      const purl = productUrl.value.trim();
-
-      if (!cat || ven.length!==3 || !num || num<1 || num>999) {
-        setStatus('Please complete all required fields', 'error');
-        return;
-      }
-
-      const sku = buildSku(cat, ven, num);
-      const list = loadSkus();
-      const existing = list.findIndex(x => x.category_code===cat && x.vendor_code===ven && x.number===num);
-      const now = new Date().toISOString();
-
-      if (existing >= 0) {
-        list[existing] = { ...list[existing], product_name: pname, vendor_name: vName, product_url: purl, updated_at: now };
-        saveSkus(list);
-        if (vName) { const m = loadVendors(); m[vName] = ven; saveVendors(m); }
-        setStatus(`Updated SKU: ${sku}`, 'success');
-        cloudUpsert(list[existing]);
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      
+      // For now, simple validation (we'll add real auth later)
+      if (username && password) {
+        // Store vendor info temporarily
+        sessionStorage.setItem('vendorCode', username.toUpperCase());
+        sessionStorage.setItem('vendorLoggedIn', 'true');
+        
+        // Redirect to vendor portal
+        window.location.href = 'vendor/index.html';
       } else {
-        const rec = { sku, category_code: cat, category_name: catName, vendor_code: ven, vendor_name: vName, number: num, product_name: pname, product_url: purl, created_at: now, updated_at: now };
-        list.push(rec);
-        saveSkus(list);
-        if (vName) { const m = loadVendors(); m[vName] = ven; saveVendors(m); }
-        setStatus(`Saved new SKU: ${sku}`, 'success');
-        cloudUpsert(rec);
+        showError('Please enter valid credentials');
       }
-      renderTable();
-    });
-
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      vendorName.value = '';
-      vendorCode.value = '';
-      productNumber.value = '';
-      productName.value = '';
-      productUrl.value = '';
-      skuOut.value = '';
-      setStatus('');
-    });
-
-    document.getElementById('printBtn').addEventListener('click', () => {
-      const cat = categoryCode.value;
-      const ven = normalizeCode(vendorCode.value);
-      const num = Number(productNumber.value);
-      if (!cat || ven.length!==3 || !num || num<1 || num>999) {
-        setStatus('Complete the form to print a label', 'error');
-        return;
-      }
-      const rec = {
-        sku: buildSku(cat, ven, num),
-        category_code: cat,
-        category_name: categorySel.value,
-        vendor_code: ven,
-        vendor_name: vendorName.value.trim(),
-        number: num,
-        product_name: productName.value.trim(),
-        product_url: productUrl.value.trim()
-      };
-      printLabel(rec);
-    });
-
-    document.getElementById('tableBody').addEventListener('click', (e) => {
-      const editSku = e.target.getAttribute('data-edit');
-      const delSku = e.target.getAttribute('data-del');
-      const labelSku = e.target.getAttribute('data-label');
-      
-      if (editSku) {
-        const rec = loadSkus().find(x => x.sku===editSku);
-        if (rec) fillFormFromSku(rec);
-      }
-      if (labelSku) {
-        const rec = loadSkus().find(x => x.sku===labelSku);
-        if (rec) printLabel(rec);
-      }
-      if (delSku) {
-        if (!confirm(`Delete ${delSku}?`)) return;
-        const list = loadSkus().filter(x => x.sku!==delSku);
-        saveSkus(list);
-        renderTable();
-        setStatus(`Deleted ${delSku}`, 'success');
-        cloudDelete(delSku);
-      }
-    });
-
-    document.getElementById('filterCategory').addEventListener('change', renderTable);
-    document.getElementById('filterVendor').addEventListener('input', renderTable);
-    document.getElementById('resetFilters').addEventListener('click', () => {
-      document.getElementById('filterCategory').value = '';
-      document.getElementById('filterVendor').value = '';
-      renderTable();
-    });
-
-    function toCsv(list) {
-      const head = ['sku','category_code','category_name','vendor_code','vendor_name','number','product_name','product_url','created_at','updated_at'];
-      const rows = list.map(r => head.map(k => (r[k] ?? '')).map(v => '"'+String(v).replace(/"/g,'""')+'"').join(','));
-      return head.join(',') + '\n' + rows.join('\n');
     }
-
-    function download(filename, text) {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([text], {type: 'text/csv'}));
-      a.download = filename;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    }
-
-    document.getElementById('exportCsv').addEventListener('click', () => {
-      download('julinemart_skus.csv', toCsv(loadSkus()));
-    });
-
-    document.getElementById('importCsv').addEventListener('click', () => {
-      document.getElementById('csvFile').click();
-    });
-
-    document.getElementById('csvFile').addEventListener('change', () => {
-      const f = document.getElementById('csvFile').files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const text = reader.result;
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        const head = lines.shift().split(',').map(s=>s.replace(/^\"|\"$/g,''));
-        const rows = [];
-        
-        for (const line of lines) {
-          const cells = [];
-          let cur = '';
-          let inQ = false;
-          for (let i=0; i<line.length; i++) {
-            const ch = line[i];
-            if (ch==='"') {
-              if (inQ && line[i+1]==='"') { cur+='"'; i++; }
-              else { inQ=!inQ; }
-            } else if (ch===',' && !inQ) {
-              cells.push(cur);
-              cur='';
-            } else {
-              cur+=ch;
-            }
-          }
-          cells.push(cur);
-          const obj = {};
-          head.forEach((h,idx)=> obj[h] = cells[idx]?.replace(/^\"|\"$/g,'') ?? '');
-          if (obj.sku) rows.push(obj);
-        }
-
-        const list = loadSkus();
-        const now = new Date().toISOString();
-        let created=0, updated=0;
-        
-        rows.forEach(r => {
-          const [cat, ven, numStr] = r.sku.split('-');
-          const num = Number(numStr);
-          if (!cat || !ven || !num) return;
-          
-          const idx = list.findIndex(x => x.category_code===cat && x.vendor_code===ven && x.number===num);
-          const rec = {
-            sku: r.sku,
-            category_code: cat,
-            category_name: r.category_name || '',
-            vendor_code: ven,
-            vendor_name: r.vendor_name||'',
-            number: num,
-            product_name: r.product_name||'',
-            product_url: r.product_url||'',
-            created_at: r.created_at||now,
-            updated_at: now
-          };
-          
-          if (idx>=0) {
-            list[idx] = { ...list[idx], ...rec };
-            updated++;
-            cloudUpsert(list[idx]);
-          } else {
-            list.push(rec);
-            created++;
-            cloudUpsert(rec);
-          }
-        });
-        
-        saveSkus(list);
-        renderTable();
-        setStatus(`Imported: ${created} new, ${updated} updated`, 'success');
-      };
-      reader.readAsText(f);
-      document.getElementById('csvFile').value = '';
-    });
-
-    document.getElementById('forceSyncBtn').addEventListener('click', () => {
-      pullFromCloud();
-    });
-
-    function setupLogo() {
-      const logoUrl = loadLogoUrl();
-      const headerLogo = document.getElementById('headerLogo');
-      const logoUrlInput = document.getElementById('logoUrl');
-      const logoPreview = document.getElementById('logoPreview');
-
-      headerLogo.classList.remove('broken');
-
-      if (logoUrl) {
-        logoUrlInput.value = logoUrl;
-        updateLogoDisplay(logoUrl, headerLogo, logoPreview);
-      } else {
-        headerLogo.style.display = 'none';
-        headerLogo.src = '';
-        logoPreview.innerHTML = '';
+    
+    // Check if vendor is already logged in
+    if (sessionStorage.getItem('vendorLoggedIn') === 'true') {
+      const vendorCode = sessionStorage.getItem('vendorCode');
+      if (vendorCode && window.location.pathname.endsWith('index.html')) {
+        // Show a welcome message or auto-redirect option
+        console.log('Vendor already logged in:', vendorCode);
       }
-
-      document.getElementById('saveLogoBtn').addEventListener('click', async () => {
-        const newLogoUrl = logoUrlInput.value.trim();
-        if (!newLogoUrl) {
-          setStatus('Please enter a logo URL', 'error');
-          return;
-        }
-        
-        try {
-          new URL(newLogoUrl);
-        } catch (e) {
-          setStatus('Please enter a valid URL', 'error');
-          return;
-        }
-
-        saveLogoUrl(newLogoUrl);
-        await cloudSaveLogo(newLogoUrl);
-        updateLogoDisplay(newLogoUrl, headerLogo, logoPreview);
-        setStatus('Logo updated and synced successfully!', 'success');
-      });
-
-      document.getElementById('clearLogoBtn').addEventListener('click', async () => {
-        if (confirm('Are you sure you want to remove the logo?')) {
-          saveLogoUrl('');
-          await cloudSaveLogo('');
-          headerLogo.style.display = 'none';
-          headerLogo.src = '';
-          headerLogo.classList.remove('broken');
-          logoUrlInput.value = '';
-          logoPreview.innerHTML = '';
-          setStatus('Logo removed and synced successfully!', 'success');
-        }
-      });
-
-      logoUrlInput.addEventListener('input', () => {
-        const url = logoUrlInput.value.trim();
-        if (url) {
-          try {
-            new URL(url);
-            updateLogoPreview(url, logoPreview);
-          } catch (e) {
-            logoPreview.innerHTML = '<div class="logo-error">Invalid URL format</div>';
-          }
-        } else {
-          logoPreview.innerHTML = '';
-        }
-      });
     }
-
-    function updateLogoDisplay(logoUrl, headerLogo, logoPreview) {
-      headerLogo.src = logoUrl;
-      headerLogo.style.display = 'block';
-      
-      headerLogo.onerror = () => {
-        headerLogo.classList.add('broken');
-        headerLogo.style.display = 'none';
-        logoPreview.innerHTML = '<div class="logo-error">Failed to load image. Please check the URL.</div>';
-      };
-      
-      headerLogo.onload = () => {
-        headerLogo.classList.remove('broken');
-        headerLogo.style.display = 'block';
-        logoPreview.innerHTML = `<img src="${logoUrl}" alt="Logo Preview">`;
-      };
-    }
-
-    function updateLogoPreview(logoUrl, logoPreview) {
-      const previewImg = document.createElement('img');
-      previewImg.src = logoUrl;
-      previewImg.alt = 'Logo Preview';
-      
-      previewImg.onload = () => {
-        logoPreview.innerHTML = '';
-        logoPreview.appendChild(previewImg);
-      };
-      
-      previewImg.onerror = () => {
-        logoPreview.innerHTML = '<div class="logo-error">Failed to load image preview</div>';
-      };
-    }
-
-    categorySel.addEventListener('change', () => {
-      categoryCode.value = CATEGORY_MAP[categorySel.value] || '';
-      refreshSkuField();
-    });
-    vendorName.addEventListener('blur', () => {
-      autoSuggestVendorCode();
-      refreshSkuField();
-    });
-    vendorCode.addEventListener('input', refreshSkuField);
-    productNumber.addEventListener('input', refreshSkuField);
-
-    function printLabel(rec) {
-      const logoUrl = loadLogoUrl();
-      const logo = logoUrl 
-        ? `<img src="${logoUrl}" alt="Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">`
-        : '<div class="company-name">JulineMart</div>';
-      const sku = String(rec.sku || '').trim();
-      const url = (rec.product_url && rec.product_url.trim()) ? rec.product_url.trim() : `https://julinemart.com/p/${sku}`;
-      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-      
-      const w = window.open('', '_blank', 'width=800,height=600');
-      const styles = `
-        @media print { @page { margin: 0; } body { margin: 1cm; } }
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          margin: 0;
-          background: #f5f5f5;
-        }
-        .label {
-          width: 400px;
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 32px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .label-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 24px;
-          padding-bottom: 20px;
-          border-bottom: 2px solid #e5e7eb;
-        }
-        .logo-section {
-          flex: 1;
-        }
-        .logo-section img {
-          max-height: 50px;
-          max-width: 150px;
-          object-fit: contain;
-        }
-        .company-name {
-          font-size: 20px;
-          font-weight: 700;
-          color: #2d1b69;
-        }
-        .sku-section {
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .sku-label {
-          font-size: 12px;
-          color: #6b7280;
-          font-weight: 500;
-          margin-bottom: 8px;
-        }
-        .sku-code {
-          font-family: 'Courier New', monospace;
-          font-size: 28px;
-          font-weight: 700;
-          color: #5b21b6;
-          letter-spacing: 2px;
-        }
-        .details {
-          background: #f9fafb;
-          padding: 16px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-        }
-        .detail-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-          font-size: 13px;
-        }
-        .detail-row:last-child {
-          margin-bottom: 0;
-        }
-        .detail-label {
-          color: #6b7280;
-          font-weight: 500;
-        }
-        .detail-value {
-          color: #1f2937;
-          font-weight: 600;
-        }
-        .product-name {
-          font-size: 16px;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 16px;
-          text-align: center;
-        }
-        .qr-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding-top: 20px;
-          border-top: 2px solid #e5e7eb;
-        }
-        .qr-section img {
-          width: 200px;
-          height: 200px;
-          border: 4px solid #5b21b6;
-          border-radius: 12px;
-          padding: 8px;
-          background: white;
-        }
-        .scan-text {
-          margin-top: 12px;
-          font-size: 12px;
-          color: #6b7280;
-          text-align: center;
-        }
-      `;
-      
-      w.document.write(`<!DOCTYPE html>
-        <html>
-        <head>
-          <title>Label - ${sku}</title>
-          <style>${styles}</style>
-        </head>
-        <body>
-          <div class="label">
-            <div class="label-header">
-              <div class="logo-section">
-                ${logo}
-              </div>
-            </div>
-            
-            <div class="sku-section">
-              <div class="sku-label">SKU CODE</div>
-              <div class="sku-code">${sku}</div>
-            </div>
-            
-            ${rec.product_name ? `<div class="product-name">${rec.product_name.replace(/</g,'&lt;')}</div>` : ''}
-            
-            <div class="details">
-              <div class="detail-row">
-                <span class="detail-label">Category:</span>
-                <span class="detail-value">${rec.category_code}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Vendor:</span>
-                <span class="detail-value">${rec.vendor_code}${rec.vendor_name ? ` (${rec.vendor_name})` : ''}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Product #:</span>
-                <span class="detail-value">${numberTo3(rec.number)}</span>
-              </div>
-            </div>
-            
-            <div class="qr-section">
-              <img id="qr" src="${qrUrl}" alt="QR Code">
-              <div class="scan-text">Scan to view product details</div>
-            </div>
-          </div>
-          <script>
-            document.getElementById('qr').onload = function() {
-              setTimeout(function() { window.print(); }, 500);
-            };
-          <\/script>
-        </body>
-        </html>`);
-      w.document.close();
-    }
-
-    (function runSelfTests() {
-      const results = [];
-      function test(name, fn) {
-        try {
-          fn();
-          results.push({name, ok:true});
-        } catch(e) {
-          console.error('Test failed:', name, e);
-          results.push({name, ok:false});
-        }
-      }
-      
-      test('SKU format', () => {
-        if (buildSku('WMN','QUE',7) !== 'WMN-QUE-007') throw new Error();
-      });
-      test('Number padding', () => {
-        if (numberTo3(7) !== '007') throw new Error();
-      });
-      test('Supabase client', () => {
-        if (!getSupabase()) throw new Error();
-      });
-      
-      const el = document.getElementById('selfTest');
-      const pass = results.filter(r=>r.ok).length;
-      el.className = 'badge ' + (pass===results.length ? 'success' : 'error');
-      el.querySelector('span:last-child').textContent = pass===results.length ? 'Tests Passed' : `Tests: ${pass}/${results.length}`;
-    })();
-
-    (function handlePublicRoute() {
-      const path = String(location.pathname || '').replace(/\/+$/, '');
-      const match = path.match(/^\/p\/([A-Za-z]{3}-[A-Za-z]{3}-\d{3})$/i);
-      if (!match) return;
-      
-      const sku = match[1].toUpperCase();
-      document.body.innerHTML = `
-        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fafafa;padding:20px">
-          <div style="max-width:500px;width:100%;background:white;border-radius:16px;padding:32px;box-shadow:0 4px 6px rgba(0,0,0,0.1);text-align:center">
-            <div style="font-size:24px;font-weight:700;color:#2d1b69;margin-bottom:16px">JulineMart</div>
-            <div style="font-family:monospace;font-size:20px;color:#5b21b6;margin-bottom:8px">${sku}</div>
-            <div id="msg" style="color:#6b7280;margin-bottom:20px">Looking up product...</div>
-            <button onclick="navigator.clipboard.writeText('${sku}')" style="padding:12px 24px;background:#5b21b6;color:white;border:none;border-radius:10px;cursor:pointer;margin-right:8px">Copy SKU</button>
-            <a href="https://julinemart.com" style="display:inline-block;padding:12px 24px;background:#f3f4f6;color:#1f2937;border-radius:10px;text-decoration:none">Go to Store</a>
-          </div>
-        </div>`;
-      
-      const sb = getSupabase();
-      if (!sb) {
-        document.getElementById('msg').textContent = 'Offline - Cannot fetch product';
-        return;
-      }
-      
-      sb.from('skus').select('product_url').eq('sku', sku).maybeSingle().then(res => {
-        if (res.data && res.data.product_url) {
-          document.getElementById('msg').textContent = 'Redirecting...';
-          location.replace(res.data.product_url);
-        } else {
-          document.getElementById('msg').textContent = 'No product page linked to this SKU';
-        }
-      });
-    })();
-
-    (function init() {
-      setupLogo();
-      populateCategories();
-      renderTable();
-      pullFromCloud().then(() => {
-        const sb = getSupabase();
-        if (sb) {
-          sb.channel('skus-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'skus' }, () => pullFromCloud())
-            .subscribe();
-        }
-      }).catch(err => {
-        console.warn('Initial sync failed, using local data:', err.message);
-        setSbBadge(false, 'Offline');
-        updateSyncStatus(false);
-      });
-
-      document.querySelector('.menu-toggle').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelector('.nav-menu').classList.toggle('menu-open');
-      });
-
-      document.addEventListener('click', (e) => {
-        const navMenu = document.querySelector('.nav-menu');
-        if (navMenu.classList.contains('menu-open') && !navMenu.contains(e.target)) {
-          navMenu.classList.remove('menu-open');
-        }
-      });
-    })();
   </script>
 </body>
 </html>
