@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Inventory Dashboard - JulineMart</title>
+  <style>
+    :root {
+      --purple-dark: #2d1b69;
+      --purple: #5b21b6;
+      --purple-light: #7c3aed;
+      --orange: #f97316;
+      --orange-hover: #ea580c;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    
+    header {
+      background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%);
+      color: white;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .nav-link {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .nav-link:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .nav-link.active {
+      background: white;
+      color: var(--purple);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    .page-header {
+      margin-bottom: 32px;
+    }
+    
+    .page-header h1 {
+      font-size: 32px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .page-header p {
+      color: var(--text-light);
+      font-size: 16px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .stat-label {
+      color: var(--text-light);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .stat-icon {
+      font-size: 24px;
+    }
+    
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    .stat-card.success .stat-value {
+      color: var(--success);
+    }
+    
+    .stat-card.warning .stat-value {
+      color: var(--warning);
+    }
+    
+    .stat-card.danger .stat-value {
+      color: var(--danger);
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .filter-group label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-light);
+    }
+    
+    .filter-input, .filter-select {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .filter-input:focus, .filter-select:focus {
+      outline: none;
+      border-color: var(--purple);
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: var(--purple);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--purple-light);
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: var(--text);
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+    }
+    
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    tr:hover td {
+      background: #f9fafb;
+    }
+    
+    .sku-cell {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: var(--purple);
+    }
+    
+    .vendor-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--orange);
+      color: white;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-badge.in-stock {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-badge.out-of-stock {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .status-badge.low-stock {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .alert-icon {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .alert-icon.danger {
+      background: var(--danger);
+      animation: pulse 2s infinite;
+    }
+    
+    .alert-icon.warning {
+      background: var(--warning);
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+    
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .filters {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .filter-input, .filter-select {
+        width: 100%;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <h1 style="font-size: 20px; font-weight: 600;">👨‍💼 Admin Dashboard</h1>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">SKU Manager</a>
+        <a href="inventory.html" class="nav-link active">Inventory</a>
+        <a href="../index.html" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Inventory Overview</h1>
+      <p>Monitor stock levels across all vendors</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Total Products</span>
+          <span class="stat-icon">📦</span>
+        </div>
+        <div class="stat-value" id="totalProducts">0</div>
+      </div>
+      
+      <div class="stat-card success">
+        <div class="stat-header">
+          <span class="stat-label">In Stock</span>
+          <span class="stat-icon">✅</span>
+        </div>
+        <div class="stat-value" id="inStock">0</div>
+      </div>
+      
+      <div class="stat-card warning">
+        <div class="stat-header">
+          <span class="stat-label">Low Stock</span>
+          <span class="stat-icon">⚠️</span>
+        </div>
+        <div class="stat-value" id="lowStock">0</div>
+      </div>
+      
+      <div class="stat-card danger">
+        <div class="stat-header">
+          <span class="stat-label">Out of Stock</span>
+          <span class="stat-icon">❌</span>
+        </div>
+        <div class="stat-value" id="outOfStock">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">All Inventory</h2>
+        <button class="btn btn-primary" onclick="exportInventory()">
+          📥 Export CSV
+        </button>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" class="filter-input" id="searchInput" placeholder="SKU or product name..." onkeyup="filterInventory()" style="width: 250px;" />
+        </div>
+        
+        <div class="filter-group">
+          <label>Vendor</label>
+          <select class="filter-select" id="vendorFilter" onchange="filterInventory()">
+            <option value="">All Vendors</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Status</label>
+          <select class="filter-select" id="statusFilter" onchange="filterInventory()">
+            <option value="">All Status</option>
+            <option value="in-stock">In Stock</option>
+            <option value="low-stock">Low Stock</option>
+            <option value="out-of-stock">Out of Stock</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Alert</th>
+              <th>SKU</th>
+              <th>Product Name</th>
+              <th>Vendor</th>
+              <th>Category</th>
+              <th>Stock Qty</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTable">
+            <tr>
+              <td colspan="8">
+                <div class="empty-state">
+                  <div class="empty-state-icon">📊</div>
+                  <h3>Loading inventory...</h3>
+                  <p>Please wait while we fetch all products</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+
+    let allInventory = [];
+    let filteredInventory = [];
+
+    function getSupabase() {
+      if (!window.supabase) return null;
+      if (!getSupabase._client) {
+        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return getSupabase._client;
+    }
+
+    async function loadInventory() {
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Database not connected');
+        
+        // Get all SKUs
+        const { data: skus, error: skuError } = await sb
+          .from('skus')
+          .select('*')
+          .order('sku', { ascending: true });
+        
+        if (skuError) throw skuError;
+        
+        if (!skus || skus.length === 0) {
+          showEmptyState('No products found in database.');
+          return;
+        }
+        
+        // Get all inventory
+        const { data: inventory, error: invError } = await sb
+          .from('inventory')
+          .select('*');
+        
+        if (invError) throw invError;
+        
+        // Merge data
+        allInventory = skus.map(sku => {
+          const inv = inventory?.find(i => i.sku === sku.sku);
+          return {
+            ...sku,
+            stock_quantity: inv?.stock_quantity || 0,
+            in_stock: inv?.in_stock !== undefined ? inv.in_stock : true,
+            last_updated: inv?.last_updated,
+            updated_by: inv?.updated_by
+          };
+        });
+        
+        // Populate vendor filter
+        populateVendorFilter();
+        
+        filteredInventory = [...allInventory];
+        renderInventory(filteredInventory);
+        updateStats();
+        
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+        showEmptyState('Error loading inventory. Please refresh the page.');
+      }
+    }
+
+    function populateVendorFilter() {
+      const vendors = [...new Set(allInventory.map(i => i.vendor_code))].sort();
+      const select = document.getElementById('vendorFilter');
+      select.innerHTML = '<option value="">All Vendors</option>' + 
+        vendors.map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+
+    function renderInventory(items) {
+      const tbody = document.getElementById('inventoryTable');
+      
+      if (items.length === 0) {
+        showEmptyState('No products match your filters.');
+        return;
+      }
+      
+      tbody.innerHTML = items.map(item => {
+        const status = getStatus(item.stock_quantity, item.in_stock);
+        const alertIcon = getAlertIcon(status);
+        const lastUpdated = item.last_updated 
+          ? new Date(item.last_updated).toLocaleDateString() 
+          : 'Never';
+        
+        return `
+          <tr>
+            <td>${alertIcon}</td>
+            <td class="sku-cell">${item.sku}</td>
+            <td>${item.product_name || '-'}</td>
+            <td><span class="vendor-badge">${item.vendor_code}</span></td>
+            <td>${item.category_code}</td>
+            <td style="font-weight: 600;">${item.stock_quantity}</td>
+            <td>${getStatusBadge(status)}</td>
+            <td style="font-size: 12px; color: var(--text-light);">${lastUpdated}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function getStatus(quantity, inStock) {
+      if (!inStock || quantity === 0) return 'out-of-stock';
+      if (quantity <= 5) return 'low-stock';
+      return 'in-stock';
+    }
+
+    function getAlertIcon(status) {
+      if (status === 'out-of-stock') return '<span class="alert-icon danger"></span>';
+      if (status === 'low-stock') return '<span class="alert-icon warning"></span>';
+      return '';
+    }
+
+    function getStatusBadge(status) {
+      const labels = {
+        'in-stock': 'In Stock',
+        'low-stock': 'Low Stock',
+        'out-of-stock': 'Out of Stock'
+      };
+      return `<span class="status-badge ${status}">${labels[status]}</span>`;
+    }
+
+    function updateStats() {
+      const total = allInventory.length;
+      const inStock = allInventory.filter(i => i.in_stock && i.stock_quantity > 5).length;
+      const lowStock = allInventory.filter(i => i.in_stock && i.stock_quantity > 0 && i.stock_quantity <= 5).length;
+      const outOfStock = allInventory.filter(i => !i.in_stock || i.stock_quantity === 0).length;
+      
+      document.getElementById('totalProducts').textContent = total;
+      document.getElementById('inStock').textContent = inStock;
+      document.getElementById('lowStock').textContent = lowStock;
+      document.getElementById('outOfStock').textContent = outOfStock;
+    }
+
+    function filterInventory() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const vendor = document.getElementById('vendorFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      
+      filteredInventory = allInventory.filter(item => {
+        const matchSearch = !search || 
+          item.sku.toLowerCase().includes(search) ||
+          (item.product_name && item.product_name.toLowerCase().includes(search));
+        
+        const matchVendor = !vendor || item.vendor_code === vendor;
+        
+        const itemStatus = getStatus(item.stock_quantity, item.in_stock);
+        const matchStatus = !status || itemStatus === status;
+        
+        return matchSearch && matchVendor && matchStatus;
+      });
+      
+      renderInventory(filteredInventory);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('vendorFilter').value = '';
+      document.getElementById('statusFilter').value = '';
+      filteredInventory = [...allInventory];
+      renderInventory(filteredInventory);
+    }
+
+    function exportInventory() {
+      const headers = ['SKU', 'Product Name', 'Vendor Code', 'Vendor Name', 'Category', 'Stock Quantity', 'In Stock', 'Status', 'Last Updated'];
+      const rows = filteredInventory.map(item => {
+        const status = getStatus(item.stock_quantity, item.in_stock);
+        return [
+          item.sku,
+          item.product_name || '',
+          item.vendor_code,
+          item.vendor_name || '',
+          item.category_code,
+          item.stock_quantity,
+          item.in_stock ? 'Yes' : 'No',
+          status,
+          item.last_updated || 'Never'
+        ];
+      });
+      
+      const csv = [headers, ...rows].map(row => 
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `julinemart-inventory-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function showEmptyState(message) {
+      const tbody = document.getElementById('inventoryTable');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-state-icon">📦</div>
+              <h3>${message}</h3>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    // Initialize
+    loadInventory();
+  </script>
+</body>
+</html>
