@@ -437,208 +437,257 @@
 
   <script>
     const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
 
-    let vendorCode = '';
-    let allProducts = [];
+let vendorCode = '';
+let allProducts = [];
 
-    function getSupabase() {
-      if (!window.supabase) return null;
-      if (!getSupabase._client) {
-        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-      return getSupabase._client;
+function getSupabase() {
+  if (!window.supabase) return null;
+  if (!getSupabase._client) {
+    getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return getSupabase._client;
+}
+
+function checkAuth() {
+  vendorCode = sessionStorage.getItem('vendorCode');
+  const isLoggedIn = sessionStorage.getItem('vendorLoggedIn');
+  
+  if (!isLoggedIn || !vendorCode) {
+    window.location.href = '../index.html';
+    return false;
+  }
+  
+  document.getElementById('vendorBadge').textContent = vendorCode;
+  return true;
+}
+
+function logout() {
+  sessionStorage.removeItem('vendorCode');
+  sessionStorage.removeItem('vendorLoggedIn');
+  window.location.href = '../index.html';
+}
+
+async function loadProducts() {
+  if (!checkAuth()) return;
+  
+  try {
+    const sb = getSupabase();
+    if (!sb) throw new Error('Database not connected');
+    
+    // Get SKUs for this vendor
+    const { data: skus, error: skuError } = await sb
+      .from('skus')
+      .select('*')
+      .eq('vendor_code', vendorCode)
+      .order('sku', { ascending: true });
+    
+    if (skuError) throw skuError;
+    
+    if (!skus || skus.length === 0) {
+      allProducts = [];
+      renderProducts([]);
+      updateStats();
+      return;
     }
+    
+    // Get inventory data for these SKUs
+    const skuList = skus.map(s => s.sku);
+    const { data: inventory, error: invError } = await sb
+      .from('inventory')
+      .select('*')
+      .in('sku', skuList);
+    
+    if (invError) throw invError;
+    
+    // Merge SKU and inventory data
+    allProducts = skus.map(sku => {
+      const inv = inventory?.find(i => i.sku === sku.sku);
+      return {
+        ...sku,
+        stock_quantity: inv?.stock_quantity || 0,
+        in_stock: inv?.in_stock !== undefined ? inv.in_stock : true,
+        inventory_id: inv?.id,
+        last_updated: inv?.last_updated,
+        notes: inv?.notes || ''
+      };
+    });
+    
+    renderProducts(allProducts);
+    updateStats();
+    
+  } catch (error) {
+    console.error('Error loading products:', error);
+    showEmptyState('Error loading products. Please refresh the page.');
+  }
+}
 
-    function checkAuth() {
-      vendorCode = sessionStorage.getItem('vendorCode');
-      const isLoggedIn = sessionStorage.getItem('vendorLoggedIn');
-      
-      if (!isLoggedIn || !vendorCode) {
-        window.location.href = '../index.html';
-        return false;
-      }
-      
-      document.getElementById('vendorBadge').textContent = vendorCode;
-      return true;
-    }
+function renderProducts(products) {
+  const tbody = document.getElementById('productsTable');
+  
+  if (products.length === 0) {
+    showEmptyState('No products found for your vendor code.');
+    return;
+  }
+  
+  tbody.innerHTML = products.map(p => `
+    <tr data-sku="${p.sku}">
+      <td class="sku-cell">${p.sku}</td>
+      <td>${p.product_name || '-'}</td>
+      <td>${p.category_code}</td>
+      <td>
+        <input 
+          type="number" 
+          class="stock-input" 
+          value="${p.stock_quantity}" 
+          min="0" 
+          max="9999"
+          onchange="updateStock('${p.sku}', this.value)"
+        />
+      </td>
+      <td>${getStatusBadge(p.stock_quantity, p.in_stock)}</td>
+      <td>
+        <label class="toggle-stock">
+          <input 
+            type="checkbox" 
+            ${p.in_stock ? 'checked' : ''} 
+            onchange="toggleStock('${p.sku}', this.checked)"
+          />
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td>
+        <button class="btn btn-primary" onclick="saveChanges('${p.sku}')">Save</button>
+      </td>
+    </tr>
+  `).join('');
+}
 
-    function logout() {
-      sessionStorage.removeItem('vendorCode');
-      sessionStorage.removeItem('vendorLoggedIn');
-      window.location.href = '../index.html';
-    }
+function getStatusBadge(quantity, inStock) {
+  if (!inStock || quantity === 0) {
+    return '<span class="status-badge out-of-stock">Out of Stock</span>';
+  } else if (quantity <= 5) {
+    return '<span class="status-badge low-stock">Low Stock</span>';
+  } else {
+    return '<span class="status-badge in-stock">In Stock</span>';
+  }
+}
 
-    async function loadProducts() {
-      if (!checkAuth()) return;
-      
-      try {
-        const sb = getSupabase();
-        if (!sb) throw new Error('Database not connected');
-        
-        const { data, error } = await sb
-          .from('skus')
-          .select('*')
-          .eq('vendor_code', vendorCode)
-          .order('sku', { ascending: true });
-        
-        if (error) throw error;
-        
-        allProducts = data || [];
-        
-        // Add mock stock data (we'll add real stock tracking to database later)
-        allProducts = allProducts.map(p => ({
-          ...p,
-          stock_quantity: Math.floor(Math.random() * 50),
-          in_stock: true
-        }));
-        
-        renderProducts(allProducts);
-        updateStats();
-        
-      } catch (error) {
-        console.error('Error loading products:', error);
-        showEmptyState('Error loading products. Please refresh the page.');
-      }
-    }
+function updateStats() {
+  const total = allProducts.length;
+  const inStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0).length;
+  const lowStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0 && p.stock_quantity <= 5).length;
+  const outOfStock = allProducts.filter(p => !p.in_stock || p.stock_quantity === 0).length;
+  
+  document.getElementById('totalProducts').textContent = total;
+  document.getElementById('inStock').textContent = inStock;
+  document.getElementById('lowStock').textContent = lowStock;
+  document.getElementById('outOfStock').textContent = outOfStock;
+}
 
-    function renderProducts(products) {
-      const tbody = document.getElementById('productsTable');
-      
-      if (products.length === 0) {
-        showEmptyState('No products found for your vendor code.');
-        return;
-      }
-      
-      tbody.innerHTML = products.map(p => `
-        <tr data-sku="${p.sku}">
-          <td class="sku-cell">${p.sku}</td>
-          <td>${p.product_name || '-'}</td>
-          <td>${p.category_code}</td>
-          <td>
-            <input 
-              type="number" 
-              class="stock-input" 
-              value="${p.stock_quantity}" 
-              min="0" 
-              max="9999"
-              onchange="updateStock('${p.sku}', this.value)"
-            />
-          </td>
-          <td>${getStatusBadge(p.stock_quantity, p.in_stock)}</td>
-          <td>
-            <label class="toggle-stock">
-              <input 
-                type="checkbox" 
-                ${p.in_stock ? 'checked' : ''} 
-                onchange="toggleStock('${p.sku}', this.checked)"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </td>
-          <td>
-            <button class="btn btn-primary" onclick="saveChanges('${p.sku}')">Save</button>
-          </td>
-        </tr>
-      `).join('');
-    }
+function updateStock(sku, quantity) {
+  const product = allProducts.find(p => p.sku === sku);
+  if (product) {
+    product.stock_quantity = parseInt(quantity);
+    updateProductRow(sku);
+    updateStats();
+  }
+}
 
-    function getStatusBadge(quantity, inStock) {
-      if (!inStock || quantity === 0) {
-        return '<span class="status-badge out-of-stock">Out of Stock</span>';
-      } else if (quantity <= 5) {
-        return '<span class="status-badge low-stock">Low Stock</span>';
-      } else {
-        return '<span class="status-badge in-stock">In Stock</span>';
-      }
-    }
+function toggleStock(sku, inStock) {
+  const product = allProducts.find(p => p.sku === sku);
+  if (product) {
+    product.in_stock = inStock;
+    updateProductRow(sku);
+    updateStats();
+  }
+}
 
-    function updateStats() {
-      const total = allProducts.length;
-      const inStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0).length;
-      const lowStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0 && p.stock_quantity <= 5).length;
-      const outOfStock = allProducts.filter(p => !p.in_stock || p.stock_quantity === 0).length;
-      
-      document.getElementById('totalProducts').textContent = total;
-      document.getElementById('inStock').textContent = inStock;
-      document.getElementById('lowStock').textContent = lowStock;
-      document.getElementById('outOfStock').textContent = outOfStock;
-    }
+function updateProductRow(sku) {
+  const product = allProducts.find(p => p.sku === sku);
+  if (!product) return;
+  
+  const row = document.querySelector(`tr[data-sku="${sku}"]`);
+  if (row) {
+    const statusCell = row.cells[4];
+    statusCell.innerHTML = getStatusBadge(product.stock_quantity, product.in_stock);
+  }
+}
 
-    function updateStock(sku, quantity) {
-      const product = allProducts.find(p => p.sku === sku);
-      if (product) {
-        product.stock_quantity = parseInt(quantity);
-        updateProductRow(sku);
-        updateStats();
-      }
-    }
+async function saveChanges(sku) {
+  const product = allProducts.find(p => p.sku === sku);
+  if (!product) return;
+  
+  try {
+    const sb = getSupabase();
+    if (!sb) throw new Error('Database not connected');
+    
+    const inventoryData = {
+      sku: product.sku,
+      stock_quantity: product.stock_quantity,
+      in_stock: product.in_stock,
+      updated_by: vendorCode,
+      last_updated: new Date().toISOString()
+    };
+    
+    // Use upsert to insert or update
+    const { error } = await sb
+      .from('inventory')
+      .upsert(inventoryData, { onConflict: 'sku' });
+    
+    if (error) throw error;
+    
+    showSuccess(`✓ Updated ${sku} successfully!`);
+    
+    // Reload to get fresh data
+    await loadProducts();
+    
+  } catch (error) {
+    console.error('Error saving changes:', error);
+    showError(`Failed to update ${sku}. Please try again.`);
+  }
+}
 
-    function toggleStock(sku, inStock) {
-      const product = allProducts.find(p => p.sku === sku);
-      if (product) {
-        product.in_stock = inStock;
-        updateProductRow(sku);
-        updateStats();
-      }
-    }
+function showSuccess(message) {
+  const msg = document.getElementById('successMsg');
+  msg.textContent = message;
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 3000);
+}
 
-    function updateProductRow(sku) {
-      const product = allProducts.find(p => p.sku === sku);
-      if (!product) return;
-      
-      const row = document.querySelector(`tr[data-sku="${sku}"]`);
-      if (row) {
-        const statusCell = row.cells[4];
-        statusCell.innerHTML = getStatusBadge(product.stock_quantity, product.in_stock);
-      }
-    }
+function showError(message) {
+  alert(message);
+}
 
-    function saveChanges(sku) {
-      const product = allProducts.find(p => p.sku === sku);
-      if (!product) return;
-      
-      // Here we'll save to Supabase (we'll add inventory table later)
-      console.log('Saving changes for', sku, product);
-      
-      showSuccess(`Updated ${sku} successfully!`);
-    }
+function showEmptyState(message) {
+  const tbody = document.getElementById('productsTable');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7">
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <h3>${message}</h3>
+          <p>Contact admin if you think this is an error</p>
+        </div>
+      </td>
+    </tr>
+  `;
+}
 
-    function showSuccess(message) {
-      const msg = document.getElementById('successMsg');
-      msg.textContent = message;
-      msg.classList.add('show');
-      setTimeout(() => msg.classList.remove('show'), 3000);
-    }
+function filterProducts() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allProducts.filter(p => 
+    p.sku.toLowerCase().includes(searchTerm) ||
+    (p.product_name && p.product_name.toLowerCase().includes(searchTerm))
+  );
+  renderProducts(filtered);
+}
 
-    function showEmptyState(message) {
-      const tbody = document.getElementById('productsTable');
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7">
-            <div class="empty-state">
-              <div class="empty-state-icon">📦</div>
-              <h3>${message}</h3>
-              <p>Contact admin if you think this is an error</p>
-            </div>
-          </td>
-        </tr>
-      `;
-    }
-
-    function filterProducts() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allProducts.filter(p => 
-        p.sku.toLowerCase().includes(searchTerm) ||
-        (p.product_name && p.product_name.toLowerCase().includes(searchTerm))
-      );
-      renderProducts(filtered);
-    }
-
-    // Initialize
-    if (checkAuth()) {
-      loadProducts();
-    }
+// Initialize
+if (checkAuth()) {
+  loadProducts();
+}
   </script>
 </body>
 </html>
