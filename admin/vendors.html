@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vendor Management - JulineMart Admin</title>
+  <style>
+    :root {
+      --purple-dark: #2d1b69;
+      --purple: #5b21b6;
+      --purple-light: #7c3aed;
+      --orange: #f97316;
+      --orange-hover: #ea580c;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    
+    header {
+      background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%);
+      color: white;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .back-link {
+      color: white;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    
+    .back-link:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    .page-header {
+      margin-bottom: 32px;
+    }
+    
+    .page-header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .page-header p {
+      color: var(--text-light);
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+      color: #1e40af;
+      font-size: 14px;
+    }
+    
+    .info-box strong {
+      color: #1e3a8a;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+    }
+    
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    tr:hover td {
+      background: #f9fafb;
+    }
+    
+    .vendor-code {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: var(--orange);
+      font-size: 16px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--purple);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--purple-light);
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+    }
+    
+    .modal-header {
+      margin-bottom: 24px;
+    }
+    
+    .modal-header h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: var(--text);
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .success-msg, .error-msg {
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .success-msg {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    
+    .error-msg {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    
+    .success-msg.show, .error-msg.show {
+      display: block;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/shared/supabase.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h1 style="font-size: 20px; font-weight: 600;">👥 Vendor Management</h1>
+      <a href="index.html" class="back-link">← Back to Admin</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Vendor Accounts</h1>
+      <p>Manage vendor access and credentials</p>
+    </div>
+
+    <div class="card">
+      <div class="info-box">
+        <strong>🔄 Auto-Registration Enabled:</strong> New vendors are automatically registered when you create SKUs with new vendor codes. Default password: <strong>password123</strong>
+      </div>
+
+      <h2 class="card-title">All Vendors</h2>
+      
+      <div class="success-msg" id="successMsg"></div>
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor Code</th>
+              <th>Vendor Name</th>
+              <th>Email</th>
+              <th>Products</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vendorsTable">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-light);">
+                Loading vendors...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div class="modal" id="passwordModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Reset Password</h2>
+        <p style="color: var(--text-light);">Set new password for <span id="modalVendorCode" style="color: var(--orange); font-weight: 600;"></span></p>
+      </div>
+      
+      <form id="passwordForm" onsubmit="handlePasswordReset(event)">
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="newPassword" required minlength="6" />
+        </div>
+        
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="confirmPassword" required minlength="6" />
+        </div>
+        
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">Reset Password</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+
+    let allVendors = [];
+    let currentVendorCode = '';
+
+    function getSupabase() {
+      if (!window.supabase) return null;
+      if (!getSupabase._client) {
+        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return getSupabase._client;
+    }
+
+    async function loadVendors() {
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Database not connected');
+
+        // Get all vendors
+        const { data: vendors, error: vendorError } = await sb
+          .from('vendors')
+          .select('*')
+          .order('vendor_code', { ascending: true });
+
+        if (vendorError) throw vendorError;
+
+        // Get product counts per vendor
+        const { data: skus, error: skuError } = await sb
+          .from('skus')
+          .select('vendor_code');
+
+        if (skuError) throw skuError;
+
+        // Count products per vendor
+        const productCounts = {};
+        skus.forEach(sku => {
+          productCounts[sku.vendor_code] = (productCounts[sku.vendor_code] || 0) + 1;
+        });
+
+        allVendors = vendors.map(v => ({
+          ...v,
+          product_count: productCounts[v.vendor_code] || 0
+        }));
+
+        renderVendors();
+
+      } catch (error) {
+        console.error('Error loading vendors:', error);
+        showError('Failed to load vendors');
+      }
+    }
+
+    function renderVendors() {
+      const tbody = document.getElementById('vendorsTable');
+
+      if (allVendors.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-light);">
+              No vendors found
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = allVendors.map(v => `
+        <tr>
+          <td><span class="vendor-code">${v.vendor_code}</span></td>
+          <td>${v.vendor_name}</td>
+          <td>${v.email || '-'}</td>
+          <td style="font-weight: 600;">${v.product_count}</td>
+          <td style="font-size: 12px; color: var(--text-light);">
+            ${new Date(v.created_at).toLocaleDateString()}
+          </td>
+          <td>
+            <button class="btn btn-primary" onclick="openPasswordModal('${v.vendor_code}')">
+              Reset Password
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openPasswordModal(vendorCode) {
+      currentVendorCode = vendorCode;
+      document.getElementById('modalVendorCode').textContent = vendorCode;
+      document.getElementById('passwordModal').classList.add('active');
+      document.getElementById('newPassword').focus();
+    }
+
+    function closeModal() {
+      document.getElementById('passwordModal').classList.remove('active');
+      document.getElementById('passwordForm').reset();
+      currentVendorCode = '';
+    }
+
+    async function handlePasswordReset(event) {
+      event.preventDefault();
+
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showError('Passwords do not match');
+        return;
+      }
+
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Database not connected');
+
+        const { data, error } = await sb.rpc('update_vendor_password', {
+          p_vendor_code: currentVendorCode,
+          p_new_password: newPassword
+        });
+
+        if (error) throw error;
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to update password');
+        }
+
+        showSuccess(`Password updated for ${currentVendorCode}`);
+        closeModal();
+
+      } catch (error) {
+        console.error('Error updating password:', error);
+        showError(error.message || 'Failed to update password');
+      }
+    }
+
+    function showSuccess(message) {
+      const el = document.getElementById('successMsg');
+      el.textContent = message;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    function showError(message) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = message;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 5000);
+    }
+
+    // Initialize
+    loadVendors();
+
+    // Close modal on outside click
+    document.getElementById('passwordModal').addEventListener('click', (e) => {
+      if (e.target.id === 'passwordModal') {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>
