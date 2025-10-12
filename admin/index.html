@@ -552,6 +552,8 @@
     </section>
 
     <section class="page" id="page-settings">
+      
+      
       <div class="card">
         <h2 class="card-title">Logo Settings</h2>
         <div class="form-group">
@@ -576,7 +578,7 @@
                 <span>Checking connection...</span>
               </div>
             </div>
-            <div style="font-size: 13px; color: var(--text-light);">Your SKUs and logo are automatically synced across all devices</div>
+            <div style="font-size: 13px; color: var(--text-light);">Your SKUs are automatically synced across all devices</div>
           </div>
         </div>
         
@@ -625,6 +627,8 @@
     function saveVendors(map) { localStorage.setItem(LS_VENDORS, JSON.stringify(map)); }
     function loadLogoUrl() { return localStorage.getItem(LS_LOGO_URL) || ''; }
     function saveLogoUrl(url) { localStorage.setItem(LS_LOGO_URL, url); }
+    
+    
 
     function normalizeCode(s) { return (s || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0,3); }
     function numberTo3(n) { return String(n).padStart(3, '0'); }
@@ -670,36 +674,7 @@
       return data||[]; 
     }
 
-    async function cloudSaveLogo(url) {
-      try {
-        const sb = getSupabase();
-        if (!sb) return;
-        const { error } = await sb.from('settings').upsert({
-          key: 'logo_url',
-          value: url,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'key' });
-        if (error) console.error('Logo save failed:', error);
-      } catch(e) {
-        console.error('Logo save error:', e);
-      }
-    }
-
-    async function cloudLoadLogo() {
-      try {
-        const sb = getSupabase();
-        if (!sb) return null;
-        const { data, error } = await sb.from('settings')
-          .select('value')
-          .eq('key', 'logo_url')
-          .maybeSingle();
-        if (error) throw error;
-        return data?.value || null;
-      } catch(e) {
-        console.error('Logo load error:', e);
-        return null;
-      }
-    }
+    
 
     async function pullFromCloud(){
       try {
@@ -718,21 +693,6 @@
         });
         saveSkus(local);
         renderTable();
-        
-        // Also sync logo from cloud
-        const cloudLogo = await cloudLoadLogo();
-        if (cloudLogo) {
-          const localLogo = loadLogoUrl();
-          if (cloudLogo !== localLogo) {
-            saveLogoUrl(cloudLogo);
-            const headerLogo = document.getElementById('headerLogo');
-            const logoPreview = document.getElementById('logoPreview');
-            if (headerLogo && logoPreview) {
-              updateLogoDisplay(cloudLogo, headerLogo, logoPreview);
-            }
-          }
-        }
-        
         if (created > 0 || updated > 0) {
           setStatus(`Synced: +${created} new, ${updated} updated`, 'success');
         }
@@ -1082,6 +1042,8 @@
       document.getElementById('csvFile').value = '';
     });
 
+    
+
     document.getElementById('forceSyncBtn').addEventListener('click', () => {
       pullFromCloud();
     });
@@ -1092,6 +1054,7 @@
       const logoUrlInput = document.getElementById('logoUrl');
       const logoPreview = document.getElementById('logoPreview');
 
+      // Clear any previous error state
       headerLogo.classList.remove('broken');
 
       if (logoUrl) {
@@ -1103,13 +1066,15 @@
         logoPreview.innerHTML = '';
       }
 
-      document.getElementById('saveLogoBtn').addEventListener('click', async () => {
+      // Save logo button
+      document.getElementById('saveLogoBtn').addEventListener('click', () => {
         const newLogoUrl = logoUrlInput.value.trim();
         if (!newLogoUrl) {
           setStatus('Please enter a logo URL', 'error');
           return;
         }
         
+        // Validate URL format
         try {
           new URL(newLogoUrl);
         } catch (e) {
@@ -1118,24 +1083,24 @@
         }
 
         saveLogoUrl(newLogoUrl);
-        await cloudSaveLogo(newLogoUrl);
         updateLogoDisplay(newLogoUrl, headerLogo, logoPreview);
-        setStatus('Logo updated and synced successfully!', 'success');
+        setStatus('Logo updated successfully!', 'success');
       });
 
-      document.getElementById('clearLogoBtn').addEventListener('click', async () => {
+      // Remove logo button
+      document.getElementById('clearLogoBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to remove the logo?')) {
           saveLogoUrl('');
-          await cloudSaveLogo('');
           headerLogo.style.display = 'none';
           headerLogo.src = '';
           headerLogo.classList.remove('broken');
           logoUrlInput.value = '';
           logoPreview.innerHTML = '';
-          setStatus('Logo removed and synced successfully!', 'success');
+          setStatus('Logo removed successfully!', 'success');
         }
       });
 
+      // Preview logo as user types
       logoUrlInput.addEventListener('input', () => {
         const url = logoUrlInput.value.trim();
         if (url) {
@@ -1152,15 +1117,18 @@
     }
 
     function updateLogoDisplay(logoUrl, headerLogo, logoPreview) {
+      // Update header logo
       headerLogo.src = logoUrl;
       headerLogo.style.display = 'block';
       
+      // Handle load error
       headerLogo.onerror = () => {
         headerLogo.classList.add('broken');
         headerLogo.style.display = 'none';
         logoPreview.innerHTML = '<div class="logo-error">Failed to load image. Please check the URL.</div>';
       };
       
+      // Handle successful load
       headerLogo.onload = () => {
         headerLogo.classList.remove('broken');
         headerLogo.style.display = 'block';
