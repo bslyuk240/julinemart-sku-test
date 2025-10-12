@@ -403,13 +403,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/shared/supabase.js"></script>
   <script src="../js/shared/auth.js"></script>
+  <script src="../js/shared/logo.js"></script>
 </head>
 <body>
   <header>
   <div class="header-content">
     <div class="logo-title">
       <img src="" alt="Logo" class="header-logo" id="headerLogo" style="display: none;" />
-      <h1>👨‍💼 Admin Portal</h1>
+      <h1 id="headerTitle">👨‍💼 Admin Portal</h1>
     </div>
     <div class="header-right">
       <div class="nav-menu">
@@ -558,14 +559,21 @@
       
       
       <div class="card">
-        <h2 class="card-title">Logo Settings</h2>
+        <h2 class="card-title">Site Settings</h2>
+        <div class="form-group">
+          <label>Site Title</label>
+          <input type="text" id="siteTitle" placeholder="Your Company Name" />
+          <div style="font-size: 12px; color: var(--text-light); margin-top: 4px;">
+            This title will appear across all pages when no logo is displayed
+          </div>
+        </div>
         <div class="form-group">
           <label>Logo URL</label>
           <input type="text" id="logoUrl" placeholder="https://.../logo.png" />
         </div>
         <div class="logo-preview" id="logoPreview"></div>
         <div class="btn-group">
-          <button class="btn-primary" id="saveLogoBtn">Save Logo</button>
+          <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
           <button class="btn-secondary" id="clearLogoBtn">Remove Logo</button>
         </div>
       </div>
@@ -1051,125 +1059,7 @@
       pullFromCloud();
     });
 
-    function setupLogo() {
-      const logoUrl = loadLogoUrl();
-      const headerLogo = document.getElementById('headerLogo');
-      const logoUrlInput = document.getElementById('logoUrl');
-      const logoPreview = document.getElementById('logoPreview');
-
-      // Clear any previous error state
-      headerLogo.classList.remove('broken');
-
-      if (logoUrl) {
-        logoUrlInput.value = logoUrl;
-        updateLogoDisplay(logoUrl, headerLogo, logoPreview);
-      } else {
-        headerLogo.style.display = 'none';
-        headerLogo.src = '';
-        logoPreview.innerHTML = '';
-      }
-
-      // Save logo button
-      document.getElementById('saveLogoBtn').addEventListener('click', () => {
-        const newLogoUrl = logoUrlInput.value.trim();
-        if (!newLogoUrl) {
-          setStatus('Please enter a logo URL', 'error');
-          return;
-        }
-        
-        // Validate URL format
-        try {
-          new URL(newLogoUrl);
-        } catch (e) {
-          setStatus('Please enter a valid URL', 'error');
-          return;
-        }
-
-        saveLogoUrl(newLogoUrl);
-        updateLogoDisplay(newLogoUrl, headerLogo, logoPreview);
-        setStatus('Logo updated successfully!', 'success');
-      });
-
-      // Remove logo button
-      document.getElementById('clearLogoBtn').addEventListener('click', () => {
-        if (confirm('Are you sure you want to remove the logo?')) {
-          saveLogoUrl('');
-          headerLogo.style.display = 'none';
-          headerLogo.src = '';
-          headerLogo.classList.remove('broken');
-          logoUrlInput.value = '';
-          logoPreview.innerHTML = '';
-          setStatus('Logo removed successfully!', 'success');
-        }
-      });
-
-      // Preview logo as user types
-      logoUrlInput.addEventListener('input', () => {
-        const url = logoUrlInput.value.trim();
-        if (url) {
-          try {
-            new URL(url);
-            updateLogoPreview(url, logoPreview);
-          } catch (e) {
-            logoPreview.innerHTML = '<div class="logo-error">Invalid URL format</div>';
-          }
-        } else {
-          logoPreview.innerHTML = '';
-        }
-      });
-    }
-
-    function updateLogoDisplay(logoUrl, headerLogo, logoPreview) {
-      // Update header logo
-      headerLogo.src = logoUrl;
-      headerLogo.style.display = 'block';
-      
-      // Handle load error
-      headerLogo.onerror = () => {
-        headerLogo.classList.add('broken');
-        headerLogo.style.display = 'none';
-        logoPreview.innerHTML = '<div class="logo-error">Failed to load image. Please check the URL.</div>';
-      };
-      
-      // Handle successful load
-      headerLogo.onload = () => {
-        headerLogo.classList.remove('broken');
-        headerLogo.style.display = 'block';
-        logoPreview.innerHTML = `<img src="${logoUrl}" alt="Logo Preview">`;
-      };
-    }
-
-    function updateLogoPreview(logoUrl, logoPreview) {
-      const previewImg = document.createElement('img');
-      previewImg.src = logoUrl;
-      previewImg.alt = 'Logo Preview';
-      
-      previewImg.onload = () => {
-        logoPreview.innerHTML = '';
-        logoPreview.appendChild(previewImg);
-      };
-      
-      previewImg.onerror = () => {
-        logoPreview.innerHTML = '<div class="logo-error">Failed to load image preview</div>';
-      };
-    }
-
-    categorySel.addEventListener('change', () => {
-      categoryCode.value = CATEGORY_MAP[categorySel.value] || '';
-      refreshSkuField();
-    });
-    vendorName.addEventListener('blur', () => {
-      autoSuggestVendorCode();
-      refreshSkuField();
-    });
-    vendorCode.addEventListener('input', refreshSkuField);
-    productNumber.addEventListener('input', refreshSkuField);
-
     function printLabel(rec) {
-      const logoUrl = loadLogoUrl();
-      const logo = logoUrl 
-        ? `<img src="${logoUrl}" alt="Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">`
-        : '<div class="company-name">JulineMart</div>';
       const sku = String(rec.sku || '').trim();
       const url = (rec.product_url && rec.product_url.trim()) ? rec.product_url.trim() : `https://julinemart.com/p/${sku}`;
       const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
@@ -1295,7 +1185,7 @@
           <div class="label">
             <div class="label-header">
               <div class="logo-section">
-                ${logo}
+                ${logoManager.getLogoForPrint()}
               </div>
             </div>
             
@@ -1397,8 +1287,123 @@
       });
     })();
 
+    // Setup site settings functionality
+    function setupSiteSettings() {
+      const siteTitleInput = document.getElementById('siteTitle');
+      const logoUrlInput = document.getElementById('logoUrl');
+      const logoPreview = document.getElementById('logoPreview');
+
+      // Load current settings
+      siteTitleInput.value = logoManager.getSiteTitle();
+      logoUrlInput.value = logoManager.getLogoUrl();
+      if (logoUrlInput.value) {
+        updateLogoPreview(logoUrlInput.value, logoPreview);
+      }
+
+      // Save settings button
+      document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+        const newSiteTitle = siteTitleInput.value.trim();
+        const newLogoUrl = logoUrlInput.value.trim();
+        
+        // Save site title (can be empty)
+        logoManager.setSiteTitle(newSiteTitle);
+        
+        if (newLogoUrl) {
+          // Validate URL format if provided
+          try {
+            new URL(newLogoUrl);
+          } catch (e) {
+            setStatus('Please enter a valid URL for the logo', 'error');
+            return;
+          }
+          logoManager.setLogoUrl(newLogoUrl);
+        } else {
+          logoManager.setLogoUrl('');
+        }
+
+        logoManager.init({
+          logoElementId: 'headerLogo',
+          titleElementId: 'headerTitle',
+          fallbackText: '👨‍💼 Admin Portal',
+          pageType: 'Admin Dashboard'
+        });
+        
+        if (newLogoUrl) {
+          updateLogoPreview(newLogoUrl, logoPreview);
+        } else {
+          logoPreview.innerHTML = '';
+        }
+        
+        setStatus('Settings saved successfully!', 'success');
+      });
+
+      // Remove logo button
+      document.getElementById('clearLogoBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to remove the logo?')) {
+          logoManager.setLogoUrl('');
+          logoManager.init({
+            logoElementId: 'headerLogo',
+            titleElementId: 'headerTitle',
+            fallbackText: '👨‍💼 Admin Portal',
+            pageType: 'Admin Dashboard'
+          });
+          logoUrlInput.value = '';
+          logoPreview.innerHTML = '';
+          setStatus('Logo removed successfully!', 'success');
+        }
+      });
+
+      // Preview logo as user types
+      logoUrlInput.addEventListener('input', () => {
+        const url = logoUrlInput.value.trim();
+        if (url) {
+          try {
+            new URL(url);
+            updateLogoPreview(url, logoPreview);
+          } catch (e) {
+            logoPreview.innerHTML = '<div class="logo-error">Invalid URL format</div>';
+          }
+        } else {
+          logoPreview.innerHTML = '';
+        }
+      });
+    }
+
+    function updateLogoPreview(logoUrl, logoPreview) {
+      const previewImg = document.createElement('img');
+      previewImg.src = logoUrl;
+      previewImg.alt = 'Logo Preview';
+      
+      previewImg.onload = () => {
+        logoPreview.innerHTML = '';
+        logoPreview.appendChild(previewImg);
+      };
+      
+      previewImg.onerror = () => {
+        logoPreview.innerHTML = '<div class="logo-error">Failed to load image preview</div>';
+      };
+    }
+
+    categorySel.addEventListener('change', () => {
+      categoryCode.value = CATEGORY_MAP[categorySel.value] || '';
+      refreshSkuField();
+    });
+    vendorName.addEventListener('blur', () => {
+      autoSuggestVendorCode();
+      refreshSkuField();
+    });
+    vendorCode.addEventListener('input', refreshSkuField);
+    productNumber.addEventListener('input', refreshSkuField);
+
     (function init() {
-      setupLogo();
+      // Initialize logo
+      logoManager.init({
+        logoElementId: 'headerLogo',
+        titleElementId: 'headerTitle',
+        fallbackText: '👨‍💼 Admin Portal',
+        pageType: 'Admin Dashboard'
+      });
+      setupSiteSettings();
       populateCategories();
       renderTable();
       pullFromCloud().then(() => {
