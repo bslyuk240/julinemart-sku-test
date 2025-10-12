@@ -401,6 +401,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/shared/auth.js"></script>
 </head>
 <body>
   <header>
@@ -419,7 +420,7 @@
           <button class="nav-tab" data-page="search">Search</button>
           <a href="inventory.html" class="nav-tab" style="text-decoration: none; display: inline-flex; align-items: center;">📊 Inventory</a>
           <button class="nav-tab" data-page="settings">⚙️ Settings</button>
-          <a href="../index.html" class="nav-tab" style="text-decoration: none; display: inline-flex; align-items: center;">Logout</a>
+          <button class="nav-tab" id="logoutBtn" style="background: rgba(239,68,68,0.1); color: #ef4444; border: none; cursor: pointer;">🚪 Logout</button>
         </nav>
       </div>
     </div>
@@ -1423,6 +1424,22 @@
         }
       });
     })();
+
+    // Initialize authentication
+    authManager.initAuthCheck();
+
+    // Handle logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Are you sure you want to logout?')) {
+        authManager.logout();
+      }
+    });
+
+    // Display current user
+    const userData = authManager.getUserData();
+    if (userData) {
+      console.log('Logged in as:', userData.username);
+    }
   </script>
 </body>
 </html>
