@@ -363,12 +363,16 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/shared/supabase.js"></script>
+  <script src="../js/shared/logo.js"></script>
 </head>
 <body>
   <header>
   <div class="header-content">
     <div class="header-left">
-      <h1 style="font-size: 20px; font-weight: 600;">👨‍💼 Admin Portal</h1>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img src="" alt="Logo" id="headerLogo" style="display: none; height: 32px; width: auto; object-fit: contain;" />
+        <h1 id="headerTitle" style="font-size: 20px; font-weight: 600;">👨‍💼 Admin Portal</h1>
+      </div>
     </div>
     <div class="nav-links">
       <a href="index.html" class="nav-link">Create/Search</a>
@@ -693,6 +697,12 @@
     }
 
     // Initialize without authentication
+    logoManager.init({
+      logoElementId: 'headerLogo',
+      titleElementId: 'headerTitle',
+      fallbackText: '📊 Inventory Dashboard',
+      pageType: 'Inventory Dashboard'
+    });
     loadInventory();
   </script>
 </body>
