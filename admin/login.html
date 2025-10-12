@@ -184,7 +184,8 @@
 <body>
   <div class="login-container">
     <div class="logo-section">
-      <div class="logo">🔐 Admin Portal</div>
+      <img src="" alt="Logo" id="headerLogo" style="display: none; max-height: 50px; width: auto; object-fit: contain; margin: 0 auto 16px auto;" />
+      <div class="logo" id="headerTitle">🔐 Admin Portal</div>
       <div class="subtitle">JulineMart Administration</div>
     </div>
     
@@ -215,6 +216,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/shared/supabase.js"></script>
   <script src="../js/shared/auth.js"></script>
+  <script src="../js/shared/logo.js"></script>
   <script>
     const loginForm = document.getElementById('loginForm');
     const errorMessage = document.getElementById('errorMessage');
@@ -297,6 +299,14 @@
 
     // Auto-focus email field
     document.getElementById('username').focus();
+    
+    // Initialize logo
+    logoManager.init({
+      logoElementId: 'headerLogo',
+      titleElementId: 'headerTitle',
+      fallbackText: '🔐 Admin Portal',
+      pageType: 'Admin Login'
+    });
   </script>
 </body>
 </html>
