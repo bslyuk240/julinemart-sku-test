@@ -72,6 +72,9 @@ const authManager = {
       localStorage.removeItem('jm_user');
       localStorage.removeItem('vendorCode');
       localStorage.removeItem('vendorLoggedIn');
+      
+      // Redirect to login page
+      window.location.href = './login.html';
     }
   },
   
