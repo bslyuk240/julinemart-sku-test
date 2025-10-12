@@ -59,25 +59,28 @@
     }
     
     .nav-link {
-      padding: 8px 16px;
-      background: rgba(255,255,255,0.1);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
+  padding: 8px 20px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
     
     .nav-link:hover {
       background: rgba(255,255,255,0.2);
     }
     
     .nav-link.active {
-      background: white;
-      color: var(--purple);
-    }
+  background: white;
+  color: var(--purple);
+}
     
     .container {
       max-width: 1400px;
@@ -362,17 +365,17 @@
 </head>
 <body>
   <header>
-    <div class="header-content">
-      <div class="header-left">
-        <h1 style="font-size: 20px; font-weight: 600;">👨‍💼 Admin Dashboard</h1>
-      </div>
-      <div class="nav-links">
-        <a href="index.html" class="nav-link">SKU Manager</a>
-        <a href="inventory.html" class="nav-link active">Inventory</a>
-        <a href="../index.html" class="nav-link">Logout</a>
-      </div>
+  <div class="header-content">
+    <div class="header-left">
+      <h1 style="font-size: 20px; font-weight: 600;">👨‍💼 Admin Portal</h1>
     </div>
-  </header>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Create/Search</a>
+      <a href="inventory.html" class="nav-link active">📊 Inventory</a>
+      <a href="../index.html" class="nav-link">Logout</a>
+    </div>
+  </div>
+</header>
 
   <div class="container">
     <div class="page-header">
