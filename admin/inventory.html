@@ -362,7 +362,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/shared/auth.js"></script>
+  <script src="../js/shared/supabase.js"></script>
 </head>
 <body>
   <header>
@@ -373,7 +373,6 @@
     <div class="nav-links">
       <a href="index.html" class="nav-link">Create/Search</a>
       <a href="inventory.html" class="nav-link active">📊 Inventory</a>
-      <button class="nav-link" id="logoutBtn" style="background: rgba(239,68,68,0.1); color: #ef4444; border: none; cursor: pointer;">🚪 Logout</button>
     </div>
   </div>
 </header>
@@ -693,16 +692,7 @@
       `;
     }
 
-    // Initialize
-    authManager.initAuthCheck();
-
-    // Handle logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      if (confirm('Are you sure you want to logout?')) {
-        authManager.logout();
-      }
-    });
-    
+    // Initialize without authentication
     loadInventory();
   </script>
 </body>
