@@ -139,6 +139,11 @@
       box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
     }
     
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
     .login-form {
       display: none;
       background: white;
@@ -191,8 +196,8 @@
     
     .form-group input:focus {
       outline: none;
-      border-color: var(--purple);
-      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
     }
     
     .error-msg {
@@ -239,6 +244,8 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/shared/supabase.js"></script>
+  <script src="js/shared/vendor-auth.js"></script>
 </head>
 <body>
   <div class="container">
@@ -253,7 +260,7 @@
         <div class="card-icon">👨‍💼</div>
         <h2>Admin Portal</h2>
         <p>Full access to SKU management, vendor oversight, and system administration.</p>
-        <a href="admin/index.html" class="btn btn-primary">Enter Admin Portal</a>
+        <a href="admin/login.html" class="btn btn-primary">Admin Login</a>
       </div>
       
       <div class="card vendor">
@@ -268,15 +275,22 @@
     <div class="login-form" id="loginForm">
       <div class="form-header">
         <h2>Vendor Login</h2>
-        <p>Enter your credentials to access your portal</p>
+        <p>Enter your vendor code and password</p>
       </div>
       
       <div class="error-msg" id="errorMsg"></div>
       
       <form id="vendorLoginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label>Email or Vendor Code</label>
-          <input type="text" id="username" placeholder="QUE or vendor@example.com" required />
+          <label>Vendor Code</label>
+          <input 
+            type="text" 
+            id="vendorCode" 
+            placeholder="QUE" 
+            maxlength="3"
+            style="text-transform: uppercase;"
+            required 
+          />
         </div>
         
         <div class="form-group">
@@ -284,12 +298,12 @@
           <input type="password" id="password" placeholder="Enter your password" required />
         </div>
         
-        <button type="submit" class="btn btn-orange">Login</button>
+        <button type="submit" class="btn btn-orange" id="loginBtn">Login</button>
         <button type="button" class="btn back-btn" onclick="hideLogin()">Back</button>
       </form>
       
       <p style="text-align: center; margin-top: 20px; color: var(--text-light); font-size: 14px;">
-        Don't have an account? Contact admin for registration.
+        Your vendor code is the 3-letter code in your SKU (e.g., WMN-<strong>QUE</strong>-001)
       </p>
     </div>
     
@@ -299,20 +313,10 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
-    
-    function getSupabase() {
-      if (!window.supabase) return null;
-      if (!getSupabase._client) {
-        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-      return getSupabase._client;
-    }
-    
     function showLogin() {
       document.getElementById('portalCards').style.display = 'none';
       document.getElementById('loginForm').classList.add('active');
+      document.getElementById('vendorCode').focus();
     }
     
     function hideLogin() {
@@ -328,32 +332,41 @@
       errorMsg.classList.add('show');
     }
     
+    // Auto-convert vendor code to uppercase
+    document.getElementById('vendorCode').addEventListener('input', function(e) {
+      e.target.value = e.target.value.toUpperCase();
+    });
+    
     async function handleLogin(event) {
       event.preventDefault();
       
-      const username = document.getElementById('username').value.trim();
+      const loginBtn = document.getElementById('loginBtn');
+      const vendorCode = document.getElementById('vendorCode').value.trim();
       const password = document.getElementById('password').value;
       
-      // For now, simple validation (we'll add real auth later)
-      if (username && password) {
-        // Store vendor info temporarily
-        sessionStorage.setItem('vendorCode', username.toUpperCase());
-        sessionStorage.setItem('vendorLoggedIn', 'true');
+      // Disable button
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+      
+      try {
+        // Login using vendor code
+        await vendorAuth.login(vendorCode, password);
         
         // Redirect to vendor portal
         window.location.href = 'vendor/index.html';
-      } else {
-        showError('Please enter valid credentials');
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        showError(error.message || 'Login failed. Please check your credentials.');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
       }
     }
     
     // Check if vendor is already logged in
-    if (sessionStorage.getItem('vendorLoggedIn') === 'true') {
-      const vendorCode = sessionStorage.getItem('vendorCode');
-      if (vendorCode && window.location.pathname.endsWith('index.html')) {
-        // Show a welcome message or auto-redirect option
-        console.log('Vendor already logged in:', vendorCode);
-      }
+    if (vendorAuth && vendorAuth.isLoggedIn()) {
+      window.location.href = 'vendor/index.html';
     }
   </script>
 </body>
