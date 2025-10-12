@@ -98,10 +98,10 @@ const logoManager = {
     logoElement.style.display = 'block';
     logoElement.classList.remove('broken');
     
-    // Update title text even when logo is shown (for pages that show both)
+    // Update title text and show both logo and title together
     if (titleElement) {
       titleElement.textContent = displayTitle;
-      titleElement.style.display = 'none'; // Hide when logo loads successfully
+      titleElement.style.display = 'block'; // Show title alongside logo
     }
     
     // Handle load errors
@@ -121,7 +121,7 @@ const logoManager = {
       logoElement.style.display = 'block';
       if (titleElement) {
         titleElement.textContent = displayTitle;
-        titleElement.style.display = 'none';
+        titleElement.style.display = 'block'; // Show title alongside logo
       }
     };
   },
