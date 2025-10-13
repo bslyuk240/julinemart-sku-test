@@ -315,69 +315,76 @@
   </div>
 
   <script>
-    function showLogin() {
-      document.getElementById('portalCards').style.display = 'none';
-      document.getElementById('loginForm').classList.add('active');
-      document.getElementById('vendorCode').focus();
-    }
-    
-    function hideLogin() {
-      document.getElementById('portalCards').style.display = 'grid';
-      document.getElementById('loginForm').classList.remove('active');
-      document.getElementById('errorMsg').classList.remove('show');
-      document.getElementById('vendorLoginForm').reset();
-    }
-    
-    function showError(message) {
-      const errorMsg = document.getElementById('errorMsg');
-      errorMsg.textContent = message;
-      errorMsg.classList.add('show');
-    }
-    
-    // Auto-convert vendor code to uppercase
-    document.getElementById('vendorCode').addEventListener('input', function(e) {
-      e.target.value = e.target.value.toUpperCase();
-    });
-    
-    async function handleLogin(event) {
-      event.preventDefault();
-      
-      const loginBtn = document.getElementById('loginBtn');
-      const vendorCode = document.getElementById('vendorCode').value.trim();
-      const password = document.getElementById('password').value;
-      
-      // Disable button
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'Logging in...';
-      
-      try {
-        // Login using vendor code
-        await vendorAuth.login(vendorCode, password);
-        
-        // Redirect to vendor portal
-        window.location.href = 'vendor/index.html';
-        
-      } catch (error) {
-        console.error('Login error:', error);
-        showError(error.message || 'Login failed. Please check your credentials.');
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
-      }
-    }
-    
-    // Check if vendor is already logged in
-    if (vendorAuth && vendorAuth.isLoggedIn()) {
+  function showLogin() {
+    document.getElementById('portalCards').style.display = 'none';
+    document.getElementById('loginForm').classList.add('active');
+    document.getElementById('vendorCode').focus();
+  }
+
+  function hideLogin() {
+    document.getElementById('portalCards').style.display = 'grid';
+    document.getElementById('loginForm').classList.remove('active');
+    document.getElementById('errorMsg').classList.remove('show');
+    document.getElementById('vendorLoginForm').reset();
+  }
+
+  function showError(message) {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = message;
+    errorMsg.classList.add('show');
+  }
+
+  // Auto-convert vendor code to uppercase
+  document.getElementById('vendorCode').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  // ✅ Updated secure login using Netlify Function
+  async function handleLogin(event) {
+    event.preventDefault();
+
+    const loginBtn = document.getElementById('loginBtn');
+    const vendorCode = document.getElementById('vendorCode').value.trim();
+    const password = document.getElementById('password').value;
+    const errorMsg = document.getElementById('errorMsg');
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+    errorMsg.classList.remove('show');
+
+    try {
+      // 🔐 Call your Netlify login function
+      const response = await fetch('/.netlify/functions/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor_code: vendorCode, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || 'Invalid login');
+
+      // ✅ Save vendor token and details in browser
+      localStorage.setItem('vendor_token', result.token);
+      localStorage.setItem('vendor_code', result.vendor_code);
+      localStorage.setItem('vendor_name', result.vendor_name);
+
+      // Redirect to vendor dashboard
       window.location.href = 'vendor/index.html';
+    } catch (err) {
+      console.error('Login failed:', err);
+      showError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
     }
-    
-    // Initialize logo
-    logoManager.init({
-      logoElementId: 'headerLogo',
-      titleElementId: 'headerTitle',
-      fallbackText: 'JulineMart',
-      pageType: 'SKU & Inventory System'
-    });
-  </script>
+  }
+
+  // 🔁 If vendor already logged in, skip login screen
+  const savedToken = localStorage.getItem('vendor_token');
+  if (savedToken) {
+    window.location.href = 'vendor/index.html';
+  }
+</script>
 </body>
 </html>
