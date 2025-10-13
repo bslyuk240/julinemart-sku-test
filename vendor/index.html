@@ -688,6 +688,53 @@
       });
       loadProducts();
     }
+    <script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+  // 🔧 Replace with your actual Supabase project values
+  const supabaseUrl = 'https://hnpwnjjjgxuelfognakp.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  // 🧩 Get vendor login details
+  const vendorToken = localStorage.getItem('vendor_token');
+  const vendorCode = localStorage.getItem('vendor_code');
+  const vendorName = localStorage.getItem('vendor_name');
+
+  // Redirect to login if not authenticated
+  if (!vendorToken) {
+    window.location.href = '/vendor/login.html';
+  }
+
+  // ✅ Attach token (so Supabase RLS recognizes the vendor)
+  await supabase.auth.setSession({
+    access_token: vendorToken,
+    refresh_token: vendorToken
+  });
+
+  // ✅ Example: Load SKUs for this vendor
+  async function loadVendorSkus() {
+    const { data, error } = await supabase
+      .from('skus')
+      .select('*');
+
+    if (error) {
+      console.error('Error loading SKUs:', error);
+      return;
+    }
+
+    const table = document.getElementById('skuTable');
+    if (table) {
+      table.innerHTML = data.map(
+        sku => `<tr><td>${sku.sku}</td><td>${sku.product_name}</td><td>${sku.category_name}</td></tr>`
+      ).join('');
+    }
+
+    console.log(`Loaded ${data.length} SKUs for vendor ${vendorCode}`);
+  }
+
+  loadVendorSkus();
   </script>
 </body>
 </html>
