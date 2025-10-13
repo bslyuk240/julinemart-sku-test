@@ -1,17 +1,7 @@
 [build]
   publish = "."
+  functions = "netlify/functions"
 
-# Security + caching headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "SAMEORIGIN"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    # Allow Supabase + QR providers + jsDelivr (Supabase SDK)
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https://api.qrserver.com https://quickchart.io; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co;"
-
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-cache"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
