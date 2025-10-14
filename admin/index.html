@@ -289,6 +289,11 @@
       color: #991b1b;
       border: 1px solid #fecaca;
     }
+    .status-msg.info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
     
     .file-upload {
       border: 2px dashed var(--border);
@@ -403,6 +408,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
   <script src="../js/shared/supabase.js"></script>
   <script src="../js/shared/auth.js"></script>
+  <script src="../js/shared/vendor-manager.js"></script>
   <script src="../js/shared/logo.js"></script>
 </head>
 <body>
@@ -472,9 +478,12 @@
         </div>
 
         <div class="form-group">
-            <label for="vendorEmail">Vendor Email</label>
-            <input type="email" id="vendorEmail" placeholder="Enter vendor email" required />
+          <label for="vendorEmail">Vendor Email (Required for new vendors)</label>
+          <input type="email" id="vendorEmail" placeholder="vendor@example.com" required />
+          <div style="font-size: 12px; color: var(--text-light); margin-top: 4px;">
+            📧 If this is a new vendor, they'll receive an invitation email to set up their account
           </div>
+        </div>
         <div class="form-grid" style="margin-top: 20px;">
           <div class="form-group">
             <label>Product URL</label>
@@ -913,62 +922,103 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const num = Number(productNumber.value);
   const pname = productName.value.trim();
   const purl = productUrl.value.trim();
-  const vendorEmail = vendorEmailInput.value.trim().toLowerCase(); // ✅ New line
+  const vendorEmail = vendorEmailInput.value.trim().toLowerCase();
 
   if (!cat || ven.length !== 3 || !num || num < 1 || num > 999) {
     setStatus('Please complete all required fields', 'error');
     return;
   }
 
-  // ✅ Ensure vendor record exists or is updated with email
-  await ensureVendorExists(ven, vendorEmail, vName);
-
-  const sku = buildSku(cat, ven, num);
-  const list = loadSkus();
-  const existing = list.findIndex(x => x.category_code === cat && x.vendor_code === ven && x.number === num);
-  const now = new Date().toISOString();
-
-  if (existing >= 0) {
-    list[existing] = {
-      ...list[existing],
-      product_name: pname,
-      vendor_name: vName,
-      product_url: purl,
-      updated_at: now
-    };
-    saveSkus(list);
-    if (vName) {
-      const m = loadVendors();
-      m[vName] = ven;
-      saveVendors(m);
-    }
-    setStatus(`Updated SKU: ${sku}`, 'success');
-    cloudUpsert(list[existing]);
-  } else {
-    const rec = {
-      sku,
-      category_code: cat,
-      category_name: catName,
-      vendor_code: ven,
-      vendor_name: vName,
-      number: num,
-      product_name: pname,
-      product_url: purl,
-      created_at: now,
-      updated_at: now
-    };
-    list.push(rec);
-    saveSkus(list);
-    if (vName) {
-      const m = loadVendors();
-      m[vName] = ven;
-      saveVendors(m);
-    }
-    setStatus(`Saved new SKU: ${sku}`, 'success');
-    cloudUpsert(rec);
+  if (!vendorEmail) {
+    setStatus('Vendor email is required', 'error');
+    return;
   }
 
-  renderTable();
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(vendorEmail)) {
+    setStatus('Please enter a valid email address', 'error');
+    return;
+  }
+
+  setStatus('Creating vendor and saving SKU...', 'info');
+
+  try {
+    // Step 1: Create vendor with authentication if needed
+    const vendorResult = await vendorManager.createVendorWithAuth(ven, vName, vendorEmail);
+    
+    // Step 2: Save the SKU
+    const sku = buildSku(cat, ven, num);
+    const list = loadSkus();
+    const existing = list.findIndex(x => x.category_code === cat && x.vendor_code === ven && x.number === num);
+    const now = new Date().toISOString();
+
+    if (existing >= 0) {
+      list[existing] = {
+        ...list[existing],
+        product_name: pname,
+        vendor_name: vName,
+        product_url: purl,
+        updated_at: now
+      };
+      saveSkus(list);
+      setStatus(`Updated SKU: ${sku}`, 'success');
+      cloudUpsert(list[existing]);
+    } else {
+      const rec = {
+        sku,
+        category_code: cat,
+        category_name: catName,
+        vendor_code: ven,
+        vendor_name: vName,
+        number: num,
+        product_name: pname,
+        product_url: purl,
+        created_at: now,
+        updated_at: now
+      };
+      list.push(rec);
+      saveSkus(list);
+      cloudUpsert(rec);
+      
+      // Show success message with vendor creation info
+      let successMsg = `Created SKU: ${sku}`;
+      if (vendorResult.isNewVendor) {
+        successMsg += ` • New vendor "${vName}" created`;
+      }
+      if (vendorResult.authCreated) {
+        successMsg += ` • Auth account created`;
+      }
+      if (vendorResult.emailSent) {
+        successMsg += ` • Invitation email sent to ${vendorEmail}`;
+      }
+      
+      setStatus(successMsg, 'success');
+    }
+
+    // Update vendor mapping
+    if (vName) {
+      const m = loadVendors();
+      m[vName] = ven;
+      saveVendors(m);
+    }
+
+    renderTable();
+    
+  } catch (error) {
+    console.error('Error saving SKU and creating vendor:', error);
+    let errorMsg = 'Failed to save SKU';
+    
+    if (error.message.includes('User already registered')) {
+      errorMsg = 'SKU saved, but vendor email is already registered with a different account';
+    } else if (error.message.includes('duplicate key')) {
+      errorMsg = 'This vendor code already exists with a different email';
+    } else if (error.message) {
+      errorMsg += ': ' + error.message;
+    }
+    
+    setStatus(errorMsg, 'error');
+  }
 });
 
 
@@ -978,6 +1028,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
       productNumber.value = '';
       productName.value = '';
       productUrl.value = '';
+      vendorEmailInput.value = '';
       skuOut.value = '';
       setStatus('');
     });
