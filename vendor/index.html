@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vendor Portal - JulineMart</title>
-
   <style>
     :root {
       --purple-dark: #2d1b69;
@@ -40,26 +39,26 @@
     .stat-card.warning .stat-value { color: var(--orange); }
     .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 24px; }
     .card-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--text); }
-    .search-bar input { width: 100%; max-width: 400px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; }
+    .search-bar input { width: 100%; max-width: 400px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; margin-bottom: 20px; }
     .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th { background: #f9fafb; padding: 12px 16px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
     td { padding: 16px; border-bottom: 1px solid var(--border); }
     tr:hover td { background: #f9fafb; }
     .sku-cell { font-family: 'Courier New', monospace; font-weight: 600; color: var(--orange); }
-    .status-badge.in-stock { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-    .status-badge.low-stock { background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-    .status-badge.out-of-stock { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .status-badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .status-badge.in-stock { background: #d1fae5; color: #065f46; }
+    .status-badge.low-stock { background: #fef3c7; color: #92400e; }
+    .status-badge.out-of-stock { background: #fee2e2; color: #991b1b; }
     .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
     .btn-primary { background: var(--orange); color: white; }
     .btn-primary:hover { background: var(--orange-hover); }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+    .error-banner { background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fecaca; }
   </style>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
   <script src="../js/shared/supabase.js"></script>
 </head>
-
 <body>
   <header>
     <div class="header-content">
@@ -77,6 +76,8 @@
       <p>Update your product inventory in real-time</p>
     </div>
 
+    <div id="errorBanner" class="error-banner" style="display: none;"></div>
+
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value" id="totalProducts">0</div></div>
       <div class="stat-card success"><div class="stat-label">In Stock</div><div class="stat-value" id="inStock">0</div></div>
@@ -86,10 +87,22 @@
 
     <div class="card">
       <h2 class="card-title">Your Products</h2>
-      <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 Search by SKU or product name..." onkeyup="filterProducts()" /></div>
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Search by SKU or product name..." onkeyup="filterProducts()" />
+      </div>
       <div class="table-container">
         <table>
-          <thead><tr><th>SKU</th><th>Product Name</th><th>Category</th><th>Stock Qty</th><th>Status</th><th>In Stock?</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Stock Qty</th>
+              <th>Status</th>
+              <th>In Stock?</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody id="productsTable">
             <tr><td colspan="7"><div class="empty-state">📦 Loading your products...</div></td></tr>
           </tbody>
@@ -99,10 +112,8 @@
   </div>
 
   <script>
-    // Get configuration from shared config or fallback to hardcoded values
-    const SUPABASE_URL = window.SUPABASE_URL || 'https://hnpwnjjjgxuelfognakp.supabase.co';
-    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
-
+    const SUPABASE_URL = window.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let vendorCode = localStorage.getItem('vendor_code');
@@ -114,6 +125,16 @@
       window.location.href = '../index.html';
     }
 
+    function showError(message) {
+      const banner = document.getElementById('errorBanner');
+      banner.textContent = message;
+      banner.style.display = 'block';
+    }
+
+    function hideError() {
+      document.getElementById('errorBanner').style.display = 'none';
+    }
+
     function getStatusBadge(qty, inStock) {
       if (!inStock || qty === 0) return '<span class="status-badge out-of-stock">Out of Stock</span>';
       if (qty <= 5) return '<span class="status-badge low-stock">Low Stock</span>';
@@ -122,64 +143,60 @@
 
     async function loadProducts() {
       if (!vendorCode) {
-        alert('Vendor not logged in.');
-        window.location.href = '../index.html';
+        showError('Vendor not logged in. Redirecting...');
+        setTimeout(() => window.location.href = '../index.html', 2000);
         return;
       }
+      
       document.getElementById('vendorBadge').textContent = `${vendorCode} - ${vendorName}`;
+      hideError();
 
       try {
-        // Use service role key directly to avoid RLS policy infinite recursion issues
-        console.log('Fetching products with service role key to avoid RLS policy issues');
-        let skus;
-        const serviceKey = window.SUPABASE_SERVICE_ROLE_KEY;
+        console.log('Fetching SKUs for vendor:', vendorCode);
         
-        if (serviceKey) {
-          const response = await fetch(`${SUPABASE_URL}/rest/v1/skus?vendor_code=eq.${vendorCode}&select=*`, {
-            headers: {
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          skus = await response.json();
-        } else {
-          throw new Error('Service role key not available');
+        // Fetch SKUs for this vendor using anon key (RLS policies allow this)
+        const { data: skus, error: skuError } = await sb
+          .from('skus')
+          .select('*')
+          .eq('vendor_code', vendorCode)
+          .order('sku', { ascending: true });
+
+        if (skuError) {
+          console.error('SKU fetch error:', skuError);
+          throw new Error(`Failed to load products: ${skuError.message}`);
         }
 
-        if (!skus?.length) {
-          document.getElementById('productsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state">No products found for ${vendorCode}</div></td></tr>`;
+        console.log('Found SKUs:', skus?.length || 0);
+
+        if (!skus || skus.length === 0) {
+          document.getElementById('productsTable').innerHTML = 
+            `<tr><td colspan="7"><div class="empty-state">No products found for ${vendorCode}</div></td></tr>`;
           return;
         }
 
         const skuList = skus.map(s => s.sku);
         
-        // Use service role key directly for inventory to avoid RLS policy issues
-        let inventory = [];
-        if (serviceKey) {
-          const skuFilter = skuList.map(sku => `sku.eq.${sku}`).join(',');
-          const invResponse = await fetch(`${SUPABASE_URL}/rest/v1/inventory?or=(${skuFilter})&select=*`, {
-            headers: {
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (invResponse.ok) {
-            inventory = await invResponse.json();
-          } else {
-            console.warn('Failed to fetch inventory data:', invResponse.status, invResponse.statusText);
-          }
+        // Fetch inventory data
+        console.log('Fetching inventory for', skuList.length, 'products');
+        const { data: inventory, error: invError } = await sb
+          .from('inventory')
+          .select('*')
+          .in('sku', skuList);
+
+        if (invError) {
+          console.warn('Inventory fetch warning:', invError);
         }
 
+        console.log('Found inventory records:', inventory?.length || 0);
+
+        // Merge SKU and inventory data
         allProducts = skus.map(sku => {
           const inv = inventory?.find(i => i.sku === sku.sku);
-          return { ...sku, stock_quantity: inv?.stock_quantity || 0, in_stock: inv?.in_stock ?? true };
+          return {
+            ...sku,
+            stock_quantity: inv?.stock_quantity || 0,
+            in_stock: inv?.in_stock !== undefined ? inv.in_stock : true
+          };
         });
 
         renderProducts(allProducts);
@@ -187,12 +204,19 @@
 
       } catch (err) {
         console.error('Error loading products:', err);
-        document.getElementById('productsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state">Error loading products. Please contact support if this issue persists.</div></td></tr>`;
+        showError(`Error: ${err.message}. Please refresh the page or contact support.`);
+        document.getElementById('productsTable').innerHTML = 
+          `<tr><td colspan="7"><div class="empty-state">⚠️ Error loading products</div></td></tr>`;
       }
     }
 
     function renderProducts(products) {
       const tbody = document.getElementById('productsTable');
+      if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No products to display</div></td></tr>';
+        return;
+      }
+      
       tbody.innerHTML = products.map(p => `
         <tr>
           <td class="sku-cell">${p.sku}</td>
@@ -214,7 +238,7 @@
               type="checkbox" 
               ${p.in_stock ? 'checked' : ''} 
               onchange="updateProductInStock('${p.sku}', this.checked)"
-              style="transform: scale(1.2);"
+              style="transform: scale(1.2); cursor: pointer;"
             />
           </td>
           <td><button class="btn btn-primary" onclick="saveChanges('${p.sku}')">Save</button></td>
@@ -225,8 +249,9 @@
     function updateStats() {
       const total = allProducts.length;
       const inStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0).length;
-      const lowStock = allProducts.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 5).length;
+      const lowStock = allProducts.filter(p => p.in_stock && p.stock_quantity > 0 && p.stock_quantity <= 5).length;
       const outOfStock = allProducts.filter(p => !p.in_stock || p.stock_quantity === 0).length;
+      
       document.getElementById('totalProducts').textContent = total;
       document.getElementById('inStock').textContent = inStock;
       document.getElementById('lowStock').textContent = lowStock;
@@ -237,7 +262,6 @@
       const product = allProducts.find(p => p.sku === sku);
       if (product) {
         product.stock_quantity = parseInt(newQuantity) || 0;
-        // Refresh the status badge for this product
         renderProducts(allProducts);
         updateStats();
       }
@@ -247,7 +271,6 @@
       const product = allProducts.find(p => p.sku === sku);
       if (product) {
         product.in_stock = inStock;
-        // Refresh the status badge for this product
         renderProducts(allProducts);
         updateStats();
       }
@@ -266,42 +289,49 @@
       const product = allProducts.find(p => p.sku === sku);
       if (!product) return;
       
+      const saveBtn = event.target;
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
       try {
-        // Use service role key directly to avoid RLS policy issues
-        const serviceKey = window.SUPABASE_SERVICE_ROLE_KEY;
-        if (!serviceKey) {
-          throw new Error('Service role key not available');
-        }
-        
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/inventory`, {
-          method: 'POST',
-          headers: {
-            'apikey': serviceKey,
-            'Authorization': `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify({
+        // Use anon key with RLS policies
+        const { error } = await sb
+          .from('inventory')
+          .upsert({
             sku: product.sku,
             stock_quantity: product.stock_quantity,
             in_stock: product.in_stock,
             updated_by: vendorCode,
             last_updated: new Date().toISOString(),
             vendor_code: vendorCode
-          })
-        });
+          }, {
+            onConflict: 'sku'
+          });
         
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (error) {
+          console.error('Save error:', error);
+          throw new Error(error.message);
         }
         
-        alert(`✅ Successfully saved changes for ${sku}`);
+        // Show success feedback
+        saveBtn.textContent = '✓ Saved';
+        saveBtn.style.background = '#10b981';
+        
+        setTimeout(() => {
+          saveBtn.textContent = 'Save';
+          saveBtn.style.background = '';
+          saveBtn.disabled = false;
+        }, 2000);
+        
       } catch (e) {
         console.error('Save error:', e);
-        alert(`❌ Error saving changes for ${sku}. Please try again.`);
+        alert(`❌ Error saving changes for ${sku}: ${e.message}`);
+        saveBtn.textContent = 'Save';
+        saveBtn.disabled = false;
       }
     }
 
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', loadProducts);
   </script>
 </body>
