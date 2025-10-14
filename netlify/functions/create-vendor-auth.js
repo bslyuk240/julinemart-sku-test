@@ -97,7 +97,7 @@ export async function handler(event) {
         type: 'recovery',
         email: email.toLowerCase(),
         options: {
-          redirectTo: `${process.env.URL || 'https://sku-test.netlify.app'}/vendor/index.html`
+          redirectTo: `${process.env.SITE_URL || 'https://sku-test.netlify.app'}/vendor/index.html`
         }
       })
 
