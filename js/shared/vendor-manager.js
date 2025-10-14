@@ -4,7 +4,7 @@
 const vendorManager = {
   supabase: null,
   
-  // Initialize Supabase client with service role key
+  // Initialize Supabase client
   init() {
     if (!window.supabase) {
       console.error('Supabase library not loaded');
@@ -12,14 +12,10 @@ const vendorManager = {
     }
     
     if (!this.supabase) {
-      // Use service role key for admin operations
       const SUPABASE_URL = window.SUPABASE_URL;
-      const SUPABASE_SERVICE_KEY = window.SUPABASE_SERVICE_ROLE_KEY || 
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODc1NTY0NiwiZXhwIjoyMDc0MzMxNjQ2fQ.3qu-BpT0N914eCFBo8a0StXvNy6uKs7eWgYCIyEEL7w';
+      const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
       
-      this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-        auth: { persistSession: false }
-      });
+      this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
     return true;
   },
@@ -42,7 +38,9 @@ const vendorManager = {
     };
     
     try {
-      // Step 1: Check if vendor already exists
+      console.log('🔧 Creating vendor:', vendorCode, email);
+      
+      // Step 1: Check if vendor already exists in database
       const { data: existingVendor, error: findError } = await this.supabase
         .from('vendors')
         .select('id, email, vendor_code')
@@ -53,8 +51,9 @@ const vendorManager = {
         throw findError;
       }
       
-      // Step 2: Create or update vendor record
+      // Step 2: Create or update vendor record in database
       if (existingVendor) {
+        console.log('📝 Vendor exists, updating...');
         // Vendor exists, update if email changed
         if (existingVendor.email !== email.toLowerCase() && email) {
           await this.supabase
@@ -67,6 +66,7 @@ const vendorManager = {
             .eq('vendor_code', vendorCode);
         }
       } else {
+        console.log('➕ Creating new vendor record...');
         // Create new vendor
         const { error: insertError } = await this.supabase
           .from('vendors')
@@ -81,7 +81,7 @@ const vendorManager = {
         if (insertError) {
           // Check if it's a duplicate key error
           if (insertError.code === '23505') {
-            console.log('Vendor already exists, skipping creation');
+            console.log('⚠️ Vendor already exists, continuing...');
           } else {
             throw insertError;
           }
@@ -90,114 +90,73 @@ const vendorManager = {
         }
       }
       
-      // Step 3: Create auth account using Supabase Admin API
+      // Step 3: Create auth account via Netlify function
+      // This requires service role key, so we use a serverless function
       if (email) {
+        console.log('🔐 Creating auth account via Netlify function...');
+        
         try {
-          // Generate a temporary password
-          const tempPassword = this.generatePassword();
-          
-          const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
-            email: email.toLowerCase(),
-            password: tempPassword,
-            email_confirm: false, // Require email confirmation
-            user_metadata: {
-              role: 'vendor',
+          const response = await fetch('/.netlify/functions/create-vendor-auth', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
               vendor_code: vendorCode.toUpperCase(),
-              vendor_name: vendorName
-            }
+              vendor_name: vendorName,
+              email: email.toLowerCase()
+            })
           });
-          
-          if (authError) {
-            // User might already exist
-            if (authError.message.includes('User already registered')) {
-              console.log('Auth account already exists for this email');
-            } else {
-              console.error('Auth creation error:', authError);
-            }
-          } else {
-            result.authCreated = true;
-            
-            // Step 4: Send password reset email to let them set their own password
-            const { error: resetError } = await this.supabase.auth.resetPasswordForEmail(
-              email.toLowerCase(),
-              {
-                redirectTo: `${window.location.origin}/vendor/index.html`
-              }
-            );
-            
-            if (!resetError) {
-              result.emailSent = true;
-            }
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Auth creation failed:', errorData);
+            throw new Error(errorData.error || 'Failed to create auth account');
           }
-        } catch (authErr) {
-          console.error('Authentication setup error:', authErr);
+
+          const authResult = await response.json();
+          console.log('✅ Auth result:', authResult);
+          
+          result.authCreated = authResult.authCreated;
+          result.emailSent = authResult.emailSent;
+          
+        } catch (authError) {
+          console.error('❌ Auth error:', authError);
           // Don't fail the whole operation if auth fails
+          result.error = 'Vendor created but auth setup failed: ' + authError.message;
         }
       }
       
       return result;
       
     } catch (error) {
-      console.error('Vendor creation error:', error);
+      console.error('❌ Vendor creation error:', error);
       result.error = error.message;
       throw error;
     }
   },
   
   /**
-   * Generate a random temporary password
+   * Send password reset email to vendor
+   * @param {string} email - Vendor email address
    */
-  generatePassword() {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-  },
-  
-  /**
-   * Update vendor password
-   * @param {string} vendorCode - Vendor code
-   * @param {string} newPassword - New password
-   */
-  async updateVendorPassword(vendorCode, newPassword) {
+  async sendPasswordReset(email) {
     if (!this.supabase) this.init();
     
     try {
-      // Get vendor email
-      const { data: vendor, error: vendorError } = await this.supabase
-        .from('vendors')
-        .select('email')
-        .eq('vendor_code', vendorCode)
-        .single();
-      
-      if (vendorError) throw vendorError;
-      if (!vendor || !vendor.email) {
-        throw new Error('Vendor email not found');
-      }
-      
-      // Update password using admin API
-      const { data: users, error: listError } = await this.supabase.auth.admin.listUsers();
-      if (listError) throw listError;
-      
-      const user = users.users.find(u => u.email === vendor.email);
-      if (!user) {
-        throw new Error('Auth user not found');
-      }
-      
-      const { error: updateError } = await this.supabase.auth.admin.updateUserById(
-        user.id,
-        { password: newPassword }
+      const { error } = await this.supabase.auth.resetPasswordForEmail(
+        email.toLowerCase(),
+        {
+          redirectTo: `${window.location.origin}/vendor/index.html`
+        }
       );
       
-      if (updateError) throw updateError;
+      if (error) throw error;
       
       return { success: true };
       
     } catch (error) {
-      console.error('Password update error:', error);
+      console.error('Password reset error:', error);
       throw error;
     }
   }
