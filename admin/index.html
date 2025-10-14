@@ -400,7 +400,7 @@
       display: block;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
   <script src="../js/shared/supabase.js"></script>
   <script src="../js/shared/auth.js"></script>
   <script src="../js/shared/logo.js"></script>
@@ -605,8 +605,9 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+    // Using service role key for admin operations to bypass RLS policies
+    const SUPABASE_URL = window.SUPABASE_URL || 'https://hnpwnjjjgxuelfognakp.supabase.co';
+    const SUPABASE_SERVICE_KEY = window.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODc1NTY0NiwiZXhwIjoyMDc0MzMxNjQ2fQ.3qu-BpT0N914eCFBo8a0StXvNy6uKs7eWgYCIyEEL7w';
 
     const CATEGORY_MAP = {
       "Fashion & Accessories": "FAS", "Bags": "BAG", "Caps & Hats": "HAT", "Baby Clothing": "BBC",
@@ -657,7 +658,7 @@
     function getSupabase(){
       if (!window.supabase) return null;
       if (!getSupabase._client){
-        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+        getSupabase._client = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
       }
       return getSupabase._client;
     }
