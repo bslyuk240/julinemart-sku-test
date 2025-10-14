@@ -233,6 +233,23 @@
       margin-top: 32px;
     }
     
+    .forgot-password {
+      text-align: center;
+      margin-top: 16px;
+    }
+    
+    .forgot-password a {
+      color: var(--orange);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    
+    .forgot-password a:hover {
+      color: var(--orange-hover);
+      text-decoration: underline;
+    }
+    
     @media (max-width: 768px) {
       .header h1 {
         font-size: 32px;
@@ -245,7 +262,6 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
   <script src="js/shared/supabase.js"></script>
-  <script src="js/shared/vendor-auth.js"></script>
   <script src="js/shared/logo.js"></script>
 </head>
 <body>
@@ -277,35 +293,46 @@
     <div class="login-form" id="loginForm">
       <div class="form-header">
         <h2>Vendor Login</h2>
-        <p>Enter your vendor code and password</p>
+        <p>Sign in with your email and password</p>
       </div>
       
       <div class="error-msg" id="errorMsg"></div>
       
       <form id="vendorLoginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label>Vendor Code</label>
+          <label>Email Address</label>
           <input 
-            type="text" 
-            id="vendorCode" 
-            placeholder="QUE" 
-            maxlength="3"
-            style="text-transform: uppercase;"
+            type="email" 
+            id="vendorEmail" 
+            placeholder="your-email@business.com" 
             required 
+            autocomplete="email"
           />
         </div>
         
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="password" placeholder="Enter your password" required />
+          <input 
+            type="password" 
+            id="vendorPassword" 
+            placeholder="Enter your password" 
+            required 
+            autocomplete="current-password"
+          />
         </div>
         
-        <button type="submit" class="btn btn-orange" id="loginBtn">Login</button>
+        <button type="submit" class="btn btn-orange" id="loginBtn">
+          <span id="loginText">Sign In</span>
+        </button>
         <button type="button" class="btn back-btn" onclick="hideLogin()">Back</button>
       </form>
       
-      <p style="text-align: center; margin-top: 20px; color: var(--text-light); font-size: 14px;">
-        Your vendor code is the 3-letter code in your SKU (e.g., WMN-<strong>QUE</strong>-001)
+      <div class="forgot-password">
+        <a href="#" onclick="showForgotPassword(event)">Forgot your password?</a>
+      </div>
+      
+      <p style="text-align: center; margin-top: 20px; color: var(--text-light); font-size: 13px;">
+        💡 <strong>First time?</strong> Your admin will send you an invitation email with a password reset link when they create your first SKU.
       </p>
     </div>
     
@@ -315,76 +342,163 @@
   </div>
 
   <script>
-  function showLogin() {
-    document.getElementById('portalCards').style.display = 'none';
-    document.getElementById('loginForm').classList.add('active');
-    document.getElementById('vendorCode').focus();
-  }
+    // Initialize Supabase client
+    const SUPABASE_URL = window.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function hideLogin() {
-    document.getElementById('portalCards').style.display = 'grid';
-    document.getElementById('loginForm').classList.remove('active');
-    document.getElementById('errorMsg').classList.remove('show');
-    document.getElementById('vendorLoginForm').reset();
-  }
-
-  function showError(message) {
-    const errorMsg = document.getElementById('errorMsg');
-    errorMsg.textContent = message;
-    errorMsg.classList.add('show');
-  }
-
-  // Auto-convert vendor code to uppercase
-  document.getElementById('vendorCode').addEventListener('input', (e) => {
-    e.target.value = e.target.value.toUpperCase();
-  });
-
-  // ✅ Updated secure login using Netlify Function
-  async function handleLogin(event) {
-    event.preventDefault();
-
-    const loginBtn = document.getElementById('loginBtn');
-    const vendorCode = document.getElementById('vendorCode').value.trim();
-    const password = document.getElementById('password').value;
-    const errorMsg = document.getElementById('errorMsg');
-
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
-    errorMsg.classList.remove('show');
-
-    try {
-      // 🔐 Call your Netlify login function
-      const response = await fetch('/.netlify/functions/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendor_code: vendorCode, password }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error || 'Invalid login');
-
-      // ✅ Save vendor token and details in browser
-      localStorage.setItem('vendor_token', result.token);
-      localStorage.setItem('vendor_code', result.vendor_code);
-      localStorage.setItem('vendor_name', result.vendor_name);
-
-      // Redirect to vendor dashboard
-      window.location.href = 'vendor/index.html';
-    } catch (err) {
-      console.error('Login failed:', err);
-      showError(err.message || 'Login failed. Please check your credentials.');
-    } finally {
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Login';
+    function showLogin() {
+      document.getElementById('portalCards').style.display = 'none';
+      document.getElementById('loginForm').classList.add('active');
+      document.getElementById('vendorEmail').focus();
     }
-  }
 
-  // 🔁 If vendor already logged in, skip login screen
-  const savedToken = localStorage.getItem('vendor_token');
-  if (savedToken) {
-    window.location.href = 'vendor/index.html';
-  }
-</script>
+    function hideLogin() {
+      document.getElementById('portalCards').style.display = 'grid';
+      document.getElementById('loginForm').classList.remove('active');
+      document.getElementById('errorMsg').classList.remove('show');
+      document.getElementById('vendorLoginForm').reset();
+    }
+
+    function showError(message) {
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.textContent = message;
+      errorMsg.classList.add('show');
+    }
+
+    function hideError() {
+      document.getElementById('errorMsg').classList.remove('show');
+    }
+
+    // Handle vendor login with Supabase Auth
+    async function handleLogin(event) {
+      event.preventDefault();
+      hideError();
+
+      const loginBtn = document.getElementById('loginBtn');
+      const loginText = document.getElementById('loginText');
+      const email = document.getElementById('vendorEmail').value.trim().toLowerCase();
+      const password = document.getElementById('vendorPassword').value;
+
+      // Disable button during login
+      loginBtn.disabled = true;
+      loginText.textContent = 'Signing in...';
+
+      try {
+        console.log('🔐 Attempting vendor login for:', email);
+
+        // Sign in with Supabase Auth
+        const { data: authData, error: authError } = await sb.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (authError) {
+          console.error('❌ Auth error:', authError);
+          throw new Error(authError.message);
+        }
+
+        console.log('✅ Authentication successful');
+
+        // Get vendor details from the vendors table
+        const { data: vendor, error: vendorError } = await sb
+          .from('vendors')
+          .select('vendor_code, vendor_name, email')
+          .eq('email', email)
+          .single();
+
+        if (vendorError || !vendor) {
+          console.error('❌ Vendor lookup error:', vendorError);
+          throw new Error('Vendor account not found. Please contact admin.');
+        }
+
+        console.log('✅ Vendor found:', vendor.vendor_code);
+
+        // Store vendor info in localStorage
+        localStorage.setItem('vendor_code', vendor.vendor_code);
+        localStorage.setItem('vendor_name', vendor.vendor_name);
+        localStorage.setItem('vendor_email', vendor.email);
+        localStorage.setItem('vendor_logged_in', 'true');
+
+        console.log('✅ Redirecting to vendor portal...');
+
+        // Redirect to vendor portal
+        window.location.href = 'vendor/index.html';
+
+      } catch (err) {
+        console.error('❌ Login failed:', err);
+        
+        let errorMessage = 'Login failed. Please check your credentials.';
+        
+        if (err.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        } else if (err.message.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and click the confirmation link first.';
+        } else if (err.message.includes('Vendor account not found')) {
+          errorMessage = err.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        showError(errorMessage);
+      } finally {
+        loginBtn.disabled = false;
+        loginText.textContent = 'Sign In';
+      }
+    }
+
+    // Handle forgot password
+    async function showForgotPassword(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('vendorEmail').value.trim();
+      
+      if (!email) {
+        showError('Please enter your email address first, then click "Forgot password"');
+        return;
+      }
+
+      const confirmed = confirm(`Send password reset link to:\n${email}\n\nClick OK to continue.`);
+      
+      if (!confirmed) return;
+
+      try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/vendor/index.html`
+        });
+
+        if (error) throw error;
+
+        alert(`✅ Password reset email sent to ${email}\n\nPlease check your inbox and follow the instructions.`);
+        
+      } catch (err) {
+        console.error('Password reset error:', err);
+        showError('Failed to send reset email. Please try again or contact support.');
+      }
+    }
+
+    // Check if vendor is already logged in
+    const vendorLoggedIn = localStorage.getItem('vendor_logged_in');
+    if (vendorLoggedIn === 'true') {
+      // Check if session is still valid
+      sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          console.log('✅ Active session found, redirecting to vendor portal...');
+          window.location.href = 'vendor/index.html';
+        } else {
+          // Session expired, clear storage
+          localStorage.removeItem('vendor_logged_in');
+        }
+      });
+    }
+
+    // Initialize logo
+    logoManager.init({
+      logoElementId: 'headerLogo',
+      titleElementId: 'headerTitle',
+      fallbackText: 'JulineMart',
+      pageType: ''
+    });
+  </script>
 </body>
 </html>
