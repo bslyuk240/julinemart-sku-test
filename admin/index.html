@@ -470,7 +470,11 @@
             <input type="text" id="sku" class="sku-display" readonly />
           </div>
         </div>
-        
+
+        <div class="form-group">
+            <label for="vendorEmail">Vendor Email</label>
+            <input type="email" id="vendorEmail" placeholder="Enter vendor email" required />
+          </div>
         <div class="form-grid" style="margin-top: 20px;">
           <div class="form-group">
             <label>Product URL</label>
@@ -730,15 +734,16 @@
       el.querySelector('span:last-child').textContent = ok ? 'Connected & Synced' : 'Offline Mode';
     }
 
-    const categorySel = document.getElementById('category');
-    const categoryCode = document.getElementById('categoryCode');
-    const vendorName = document.getElementById('vendorName');
-    const vendorCode = document.getElementById('vendorCode');
-    const productNumber = document.getElementById('productNumber');
-    const productName = document.getElementById('productName');
-    const productUrl = document.getElementById('productUrl');
-    const skuOut = document.getElementById('sku');
-    const status = document.getElementById('status');
+const categorySel = document.getElementById('category');
+const categoryCode = document.getElementById('categoryCode');
+const vendorName = document.getElementById('vendorName');
+const vendorCode = document.getElementById('vendorCode');
+const productNumber = document.getElementById('productNumber');
+const productName = document.getElementById('productName');
+const productUrl = document.getElementById('productUrl');
+const skuOut = document.getElementById('sku');
+const status = document.getElementById('status');
+const vendorEmailInput = document.getElementById('vendorEmail'); // store reference only
 
     function setStatus(msg, kind='') {
       if (!msg) { status.innerHTML = ''; status.className = ''; return; }
@@ -859,41 +864,112 @@
       setStatus(`Next available: ${numberTo3(nxt)}`, 'success');
     });
 
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const catName = categorySel.value;
-      const cat = categoryCode.value;
-      const vName = vendorName.value.trim();
-      const ven = normalizeCode(vendorCode.value);
-      const num = Number(productNumber.value);
-      const pname = productName.value.trim();
-      const purl = productUrl.value.trim();
+ // ✅ Ensure vendor exists in Supabase before saving SKU
+async function ensureVendorExists(vendorCode, vendorEmail, vendorName) {
+  const sb = getSupabase();
+  if (!sb) return;
 
-      if (!cat || ven.length!==3 || !num || num<1 || num>999) {
-        setStatus('Please complete all required fields', 'error');
-        return;
+  try {
+    const { data: existingVendor, error: findError } = await sb
+      .from('vendors')
+      .select('id, email')
+      .eq('vendor_code', vendorCode)
+      .maybeSingle();
+
+    if (findError && findError.code !== 'PGRST116') {
+      console.error('Error checking vendor:', findError);
+      return;
+    }
+
+    if (existingVendor) {
+      // Update email only if it's blank or different
+      if ((!existingVendor.email || existingVendor.email !== vendorEmail) && vendorEmail) {
+        await sb
+          .from('vendors')
+          .update({ email: vendorEmail, vendor_name: vendorName })
+          .eq('vendor_code', vendorCode);
       }
+    } else {
+      // Create new vendor
+      await sb.from('vendors').insert([
+        {
+          vendor_code: vendorCode,
+          vendor_name: vendorName,
+          email: vendorEmail
+        }
+      ]);
+    }
+  } catch (error) {
+    console.error('ensureVendorExists error:', error);
+  }
+}
 
-      const sku = buildSku(cat, ven, num);
-      const list = loadSkus();
-      const existing = list.findIndex(x => x.category_code===cat && x.vendor_code===ven && x.number===num);
-      const now = new Date().toISOString();
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const catName = categorySel.value;
+  const cat = categoryCode.value;
+  const vName = vendorName.value.trim();
+  const ven = normalizeCode(vendorCode.value);
+  const num = Number(productNumber.value);
+  const pname = productName.value.trim();
+  const purl = productUrl.value.trim();
+  const vendorEmail = vendorEmailInput.value.trim().toLowerCase(); // ✅ New line
 
-      if (existing >= 0) {
-        list[existing] = { ...list[existing], product_name: pname, vendor_name: vName, product_url: purl, updated_at: now };
-        saveSkus(list);
-        if (vName) { const m = loadVendors(); m[vName] = ven; saveVendors(m); }
-        setStatus(`Updated SKU: ${sku}`, 'success');
-        cloudUpsert(list[existing]);
-      } else {
-        const rec = { sku, category_code: cat, category_name: catName, vendor_code: ven, vendor_name: vName, number: num, product_name: pname, product_url: purl, created_at: now, updated_at: now };
-        list.push(rec);
-        saveSkus(list);
-        if (vName) { const m = loadVendors(); m[vName] = ven; saveVendors(m); }
-        setStatus(`Saved new SKU: ${sku}`, 'success');
-        cloudUpsert(rec);
-      }
-      renderTable();
-    });
+  if (!cat || ven.length !== 3 || !num || num < 1 || num > 999) {
+    setStatus('Please complete all required fields', 'error');
+    return;
+  }
+
+  // ✅ Ensure vendor record exists or is updated with email
+  await ensureVendorExists(ven, vendorEmail, vName);
+
+  const sku = buildSku(cat, ven, num);
+  const list = loadSkus();
+  const existing = list.findIndex(x => x.category_code === cat && x.vendor_code === ven && x.number === num);
+  const now = new Date().toISOString();
+
+  if (existing >= 0) {
+    list[existing] = {
+      ...list[existing],
+      product_name: pname,
+      vendor_name: vName,
+      product_url: purl,
+      updated_at: now
+    };
+    saveSkus(list);
+    if (vName) {
+      const m = loadVendors();
+      m[vName] = ven;
+      saveVendors(m);
+    }
+    setStatus(`Updated SKU: ${sku}`, 'success');
+    cloudUpsert(list[existing]);
+  } else {
+    const rec = {
+      sku,
+      category_code: cat,
+      category_name: catName,
+      vendor_code: ven,
+      vendor_name: vName,
+      number: num,
+      product_name: pname,
+      product_url: purl,
+      created_at: now,
+      updated_at: now
+    };
+    list.push(rec);
+    saveSkus(list);
+    if (vName) {
+      const m = loadVendors();
+      m[vName] = ven;
+      saveVendors(m);
+    }
+    setStatus(`Saved new SKU: ${sku}`, 'success');
+    cloudUpsert(rec);
+  }
+
+  renderTable();
+});
+
 
     document.getElementById('clearBtn').addEventListener('click', () => {
       vendorName.value = '';
