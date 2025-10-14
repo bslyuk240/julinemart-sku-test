@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SITE_URL = process.env.SITE_URL || 'https://sku-test.netlify.app'
 
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -46,6 +47,7 @@ export async function handler(event) {
     const { vendor_code, vendor_name, email } = JSON.parse(event.body)
 
     console.log('📨 Received request:', { vendor_code, vendor_name, email })
+    console.log('🌐 Redirect URL will be:', `${SITE_URL}/vendor/index.html`)
 
     // Validate input
     if (!vendor_code || !vendor_name || !email) {
@@ -97,7 +99,7 @@ export async function handler(event) {
         type: 'recovery',
         email: email.toLowerCase(),
         options: {
-          redirectTo: `${process.env.SITE_URL || 'https://sku-test.netlify.app'}/vendor/index.html`
+          redirectTo: `${SITE_URL}/vendor/index.html`
         }
       })
 
@@ -106,7 +108,8 @@ export async function handler(event) {
         // Don't throw - user exists so this is partial success
         emailSent = false
       } else {
-        console.log('✅ Password reset link generated:', resetData)
+        console.log('✅ Password reset link generated')
+        console.log('🔗 Redirect URL:', `${SITE_URL}/vendor/index.html`)
         emailSent = true
       }
 
@@ -140,7 +143,7 @@ export async function handler(event) {
         type: 'recovery',
         email: email.toLowerCase(),
         options: {
-          redirectTo: `${process.env.URL || 'https://sku-test.netlify.app'}/vendor/index.html`
+          redirectTo: `${SITE_URL}/vendor/index.html`
         }
       })
 
@@ -149,7 +152,7 @@ export async function handler(event) {
         emailSent = false
       } else {
         console.log('✅ Password reset link generated')
-        console.log('🔗 Link:', resetData.properties.action_link)
+        console.log('🔗 Redirect URL:', `${SITE_URL}/vendor/index.html`)
         emailSent = true
       }
     }
@@ -163,6 +166,7 @@ export async function handler(event) {
       authCreated: authCreated,
       emailSent: emailSent,
       userId: userId,
+      redirectUrl: `${SITE_URL}/vendor/index.html`,
       message: authCreated
         ? (emailSent 
             ? `✅ New vendor created and invitation email sent to ${email}` 
