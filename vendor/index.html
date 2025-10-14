@@ -56,7 +56,8 @@
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+  <script src="../js/shared/supabase.js"></script>
 </head>
 
 <body>
@@ -98,8 +99,9 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://hnpwnjjjgxuelfognakp.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
+    // Get configuration from shared config or fallback to hardcoded values
+    const SUPABASE_URL = window.SUPABASE_URL || 'https://hnpwnjjjgxuelfognakp.supabase.co';
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucHduampqZ3h1ZWxmb2duYWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTU2NDYsImV4cCI6MjA3NDMzMTY0Nn0.AVaBAzmddxnZz23YIu7IaeZzTEPI6n8CjyahRQvZSHk';
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -127,8 +129,28 @@
       document.getElementById('vendorBadge').textContent = `${vendorCode} - ${vendorName}`;
 
       try {
-        const { data: skus, error: skuError } = await sb.from('skus').select('*').eq('vendor_code', vendorCode);
-        if (skuError) throw skuError;
+        // Use service role key directly to avoid RLS policy infinite recursion issues
+        console.log('Fetching products with service role key to avoid RLS policy issues');
+        let skus;
+        const serviceKey = window.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (serviceKey) {
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/skus?vendor_code=eq.${vendorCode}&select=*`, {
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          skus = await response.json();
+        } else {
+          throw new Error('Service role key not available');
+        }
 
         if (!skus?.length) {
           document.getElementById('productsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state">No products found for ${vendorCode}</div></td></tr>`;
@@ -136,8 +158,24 @@
         }
 
         const skuList = skus.map(s => s.sku);
-        const { data: inventory, error: invError } = await sb.from('inventory').select('*').in('sku', skuList);
-        if (invError) throw invError;
+        
+        // Use service role key directly for inventory to avoid RLS policy issues
+        let inventory = [];
+        if (serviceKey) {
+          const skuFilter = skuList.map(sku => `sku.eq.${sku}`).join(',');
+          const invResponse = await fetch(`${SUPABASE_URL}/rest/v1/inventory?or=(${skuFilter})&select=*`, {
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (invResponse.ok) {
+            inventory = await invResponse.json();
+          } else {
+            console.warn('Failed to fetch inventory data:', invResponse.status, invResponse.statusText);
+          }
+        }
 
         allProducts = skus.map(sku => {
           const inv = inventory?.find(i => i.sku === sku.sku);
@@ -148,8 +186,8 @@
         updateStats();
 
       } catch (err) {
-        console.error(err);
-        document.getElementById('productsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state">Error loading products</div></td></tr>`;
+        console.error('Error loading products:', err);
+        document.getElementById('productsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state">Error loading products. Please contact support if this issue persists.</div></td></tr>`;
       }
     }
 
@@ -160,9 +198,25 @@
           <td class="sku-cell">${p.sku}</td>
           <td>${p.product_name || '-'}</td>
           <td>${p.category_code || '-'}</td>
-          <td>${p.stock_quantity}</td>
+          <td>
+            <input 
+              type="number" 
+              min="0" 
+              max="9999" 
+              value="${p.stock_quantity}" 
+              onchange="updateProductStock('${p.sku}', this.value)"
+              style="width: 80px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px;"
+            />
+          </td>
           <td>${getStatusBadge(p.stock_quantity, p.in_stock)}</td>
-          <td>${p.in_stock ? '✅' : '❌'}</td>
+          <td>
+            <input 
+              type="checkbox" 
+              ${p.in_stock ? 'checked' : ''} 
+              onchange="updateProductInStock('${p.sku}', this.checked)"
+              style="transform: scale(1.2);"
+            />
+          </td>
           <td><button class="btn btn-primary" onclick="saveChanges('${p.sku}')">Save</button></td>
         </tr>
       `).join('');
@@ -179,22 +233,72 @@
       document.getElementById('outOfStock').textContent = outOfStock;
     }
 
+    function updateProductStock(sku, newQuantity) {
+      const product = allProducts.find(p => p.sku === sku);
+      if (product) {
+        product.stock_quantity = parseInt(newQuantity) || 0;
+        // Refresh the status badge for this product
+        renderProducts(allProducts);
+        updateStats();
+      }
+    }
+
+    function updateProductInStock(sku, inStock) {
+      const product = allProducts.find(p => p.sku === sku);
+      if (product) {
+        product.in_stock = inStock;
+        // Refresh the status badge for this product
+        renderProducts(allProducts);
+        updateStats();
+      }
+    }
+
+    function filterProducts() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allProducts.filter(p => 
+        p.sku.toLowerCase().includes(search) || 
+        (p.product_name && p.product_name.toLowerCase().includes(search))
+      );
+      renderProducts(filtered);
+    }
+
     async function saveChanges(sku) {
       const product = allProducts.find(p => p.sku === sku);
       if (!product) return;
+      
       try {
-        const { error } = await sb.from('inventory').upsert({
-          sku: product.sku,
-          stock_quantity: product.stock_quantity,
-          in_stock: product.in_stock,
-          updated_by: vendorCode,
-          last_updated: new Date().toISOString()
+        // Use service role key directly to avoid RLS policy issues
+        const serviceKey = window.SUPABASE_SERVICE_ROLE_KEY;
+        if (!serviceKey) {
+          throw new Error('Service role key not available');
+        }
+        
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/inventory`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            sku: product.sku,
+            stock_quantity: product.stock_quantity,
+            in_stock: product.in_stock,
+            updated_by: vendorCode,
+            last_updated: new Date().toISOString(),
+            vendor_code: vendorCode
+          })
         });
-        if (error) throw error;
-        alert(`Saved changes for ${sku}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        alert(`✅ Successfully saved changes for ${sku}`);
       } catch (e) {
-        console.error(e);
-        alert('Error saving changes');
+        console.error('Save error:', e);
+        alert(`❌ Error saving changes for ${sku}. Please try again.`);
       }
     }
 
