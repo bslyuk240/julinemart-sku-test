@@ -338,15 +338,42 @@
     </div>
 
     <div class="card">
-      <div class="info-box">
-        <strong>📬 How Vendor Invitations Work:</strong>
-        <ul style="margin-left: 20px; margin-top: 8px;">
-          <li>When you create a vendor or add their email, they receive an invitation</li>
-          <li>The email contains a password reset link to set their own password</li>
-          <li>Vendors login at the main page using their email and password</li>
-          <li>To resend an invitation, simply create a new SKU for that vendor with their email</li>
-        </ul>
-      </div>
+  <h2 class="card-title">Send Password Reset</h2>
+  
+  <div class="info-box">
+    <strong>📧 Password Reset Instructions:</strong>
+    <ul style="margin-left: 20px; margin-top: 8px;">
+      <li>Enter the vendor's email address below</li>
+      <li>They will receive an email with a link to set a new password</li>
+      <li>The link expires after 1 hour for security</li>
+      <li>Vendors can also request password reset from the login page</li>
+    </ul>
+  </div>
+  
+  <div class="success-msg" id="resetSuccessMsg"></div>
+  <div class="error-msg" id="resetErrorMsg"></div>
+  
+  <form id="resetPasswordForm">
+    <div class="form-group">
+      <label>Vendor Email</label>
+      <input 
+        type="email" 
+        id="resetEmail" 
+        placeholder="vendor@business.com" 
+        required 
+      />
+    </div>
+    
+    <div class="btn-group">
+      <button type="submit" class="btn btn-primary">
+        📧 Send Password Reset Email
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('resetPasswordForm').reset()">
+        Clear
+      </button>
+    </div>
+  </form>
+</div>
 
       <h2 class="card-title">All Vendors</h2>
       
