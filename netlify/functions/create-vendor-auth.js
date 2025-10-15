@@ -1,4 +1,4 @@
-// Save this as: netlify/functions/create-vendor-auth.js
+// netlify/functions/create-vendor-auth.js
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -74,86 +74,103 @@ export async function handler(event) {
 
     console.log('🔍 Checking if user exists:', email)
 
-    // Step 1: Check if user already exists using admin API
-    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
-    
-    if (listError) {
-      console.error('❌ Error listing users:', listError)
-      throw new Error(`Failed to check existing users: ${listError.message}`)
-    }
-
-    const userExists = existingUsers.users.find(u => u.email === email.toLowerCase())
-
     let authCreated = false
     let emailSent = false
     let userId = null
+    let userExists = false
+
+    // Step 1: Try to get user by email using getUserByEmail (better than listUsers)
+    try {
+      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email.toLowerCase())
+      
+      if (existingUser && existingUser.user) {
+        console.log('✅ User already exists:', email, 'ID:', existingUser.user.id)
+        userExists = true
+        userId = existingUser.user.id
+      } else if (getUserError && getUserError.status !== 404) {
+        // If it's not a "not found" error, log it
+        console.error('⚠️ Error checking user:', getUserError.message)
+      }
+    } catch (checkError) {
+      console.error('⚠️ Error in getUserByEmail:', checkError.message)
+      // Continue anyway - we'll try to create the user
+    }
 
     if (userExists) {
-      console.log('✅ User already exists:', email, 'ID:', userExists.id)
-      userId = userExists.id
-      
       // User exists, send password reset email
       console.log('📧 Sending password reset to existing user...')
       
-      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: email.toLowerCase(),
-        options: {
-          redirectTo: `${SITE_URL}/vendor/index.html`
-        }
-      })
+      try {
+        const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email: email.toLowerCase(),
+          options: {
+            redirectTo: `${SITE_URL}/vendor/index.html`
+          }
+        })
 
-      if (resetError) {
-        console.error('❌ Password reset error:', resetError)
-        // Don't throw - user exists so this is partial success
+        if (resetError) {
+          console.error('❌ Password reset error:', resetError.message)
+          emailSent = false
+        } else {
+          console.log('✅ Password reset link generated')
+          emailSent = true
+        }
+      } catch (resetError) {
+        console.error('❌ Exception in password reset:', resetError.message)
         emailSent = false
-      } else {
-        console.log('✅ Password reset link generated')
-        console.log('🔗 Redirect URL:', `${SITE_URL}/vendor/index.html`)
-        emailSent = true
       }
 
     } else {
+      // User doesn't exist, create new user
       console.log('➕ Creating new user:', email)
       
-      // Step 2: Create new auth user with admin API
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email.toLowerCase(),
-        email_confirm: true, // ✅ Skip email confirmation
-        user_metadata: {
-          role: 'vendor',
-          vendor_code: vendor_code.toUpperCase(),
-          vendor_name: vendor_name
+      try {
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: email.toLowerCase(),
+          email_confirm: true, // Skip email confirmation
+          user_metadata: {
+            role: 'vendor',
+            vendor_code: vendor_code.toUpperCase(),
+            vendor_name: vendor_name
+          }
+        })
+
+        if (createError) {
+          console.error('❌ User creation error:', createError.message)
+          throw new Error(`Failed to create auth user: ${createError.message}`)
         }
-      })
 
-      if (createError) {
-        console.error('❌ User creation error:', createError)
-        throw new Error(`Failed to create auth user: ${createError.message}`)
-      }
+        console.log('✅ Auth user created:', newUser.user.id)
+        authCreated = true
+        userId = newUser.user.id
 
-      console.log('✅ Auth user created:', newUser.user.id)
-      authCreated = true
-      userId = newUser.user.id
+        // Generate password reset link for new user
+        console.log('📧 Generating password reset link for new user...')
+        
+        try {
+          const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'recovery',
+            email: email.toLowerCase(),
+            options: {
+              redirectTo: `${SITE_URL}/vendor/index.html`
+            }
+          })
 
-      // Step 3: Generate and send password reset link (invitation)
-      console.log('📧 Generating password reset link for new user...')
-      
-      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: email.toLowerCase(),
-        options: {
-          redirectTo: `${SITE_URL}/vendor/index.html`
+          if (resetError) {
+            console.error('❌ Password reset link generation error:', resetError.message)
+            emailSent = false
+          } else {
+            console.log('✅ Password reset link generated')
+            emailSent = true
+          }
+        } catch (resetError) {
+          console.error('❌ Exception in password reset:', resetError.message)
+          emailSent = false
         }
-      })
-
-      if (resetError) {
-        console.error('❌ Password reset link generation error:', resetError)
-        emailSent = false
-      } else {
-        console.log('✅ Password reset link generated')
-        console.log('🔗 Redirect URL:', `${SITE_URL}/vendor/index.html`)
-        emailSent = true
+      } catch (createError) {
+        console.error('❌ Exception in user creation:', createError.message)
+        throw createError
       }
     }
 
@@ -193,8 +210,7 @@ export async function handler(event) {
       headers,
       body: JSON.stringify({ 
         error: error.message || 'Failed to create vendor authentication',
-        details: error.toString(),
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.toString()
       })
     }
   }
