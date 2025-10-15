@@ -638,6 +638,43 @@
     });
     
     loadVendors();
+    
+    // Handle password reset form
+document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const email = document.getElementById('resetEmail').value.trim().toLowerCase();
+  
+  if (!email) {
+    showError('Please enter an email address', 'resetErrorMsg');
+    return;
+  }
+  
+  const resetBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = resetBtn.textContent;
+  resetBtn.disabled = true;
+  resetBtn.textContent = 'Sending...';
+  
+  try {
+    console.log('📧 Sending password reset to:', email);
+    
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://sku-test.netlify.app/vendor/reset-password.html'
+    });
+    
+    if (error) throw error;
+    
+    showSuccess(`✅ Password reset email sent to ${email}`, 'resetSuccessMsg');
+    document.getElementById('resetPasswordForm').reset();
+    
+  } catch (error) {
+    console.error('❌ Reset error:', error);
+    showError(`Failed to send reset email: ${error.message}`, 'resetErrorMsg');
+  } finally {
+    resetBtn.disabled = false;
+    resetBtn.textContent = originalText;
+  }
+});
   </script>
 </body>
 </html>
