@@ -183,7 +183,7 @@ export async function handler(event) {
       authCreated: authCreated,
       emailSent: emailSent,
       userId: userId,
-      redirectUrl: `${SITE_URL}/vendor/index.html`,
+      redirectTo: `${SITE_URL}/vendor/reset-password.html`
       message: authCreated
         ? (emailSent 
             ? `✅ New vendor created and invitation email sent to ${email}` 
